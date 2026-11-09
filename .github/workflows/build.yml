@@ -1,0 +1,101 @@
+name: Build Ghostgram iOS (.ipa)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ master, main ]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build iOS IPA
+    runs-on: macos-14
+    timeout-minutes: 360
+
+    steps:
+      - name: Checkout repository & submodules
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Select Xcode
+        run: |
+          sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+          xcodebuild -version
+
+      - name: Set up Ad-hoc / Self-Signed Keychain
+        run: |
+          KEYCHAIN_NAME="build.keychain"
+          KEYCHAIN_PATH="$RUNNER_TEMP/$KEYCHAIN_NAME"
+          KEYCHAIN_PASSWORD="temp"
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychains -d user -s "$KEYCHAIN_PATH" $(security list-keychains -d user | tr -d '"')
+
+          # Import fake-codesigning certificate included in the repo
+          security import build-system/fake-codesigning/certs/SelfSigned.p12 \
+            -k "$KEYCHAIN_PATH" \
+            -P "" \
+            -T /usr/bin/codesign \
+            -T /usr/bin/security
+
+          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+      - name: Configure Xcode & Submodule Patches
+        run: |
+          # 1. Configure Xcode integration for Bazel
+          chmod +x build-system/GGXcodeConfig.sh
+          build-system/GGXcodeConfig.sh
+
+          # 2. Apply upstream patches required by Ghostgram
+          apply_patch() {
+            local dir="$1"
+            local patch="$2"
+            local abs_patch="$(pwd)/$patch"
+            if git -C "$dir" apply --check "$abs_patch" 2>/dev/null; then
+              git -C "$dir" apply "$abs_patch" && echo "Applied: $patch -> $dir"
+            fi
+          }
+          apply_patch build-system/bazel-rules/rules_apple build-system/GGPatches/rules_apple-strip-shell-env.patch
+          apply_patch submodules/TgVoipWebrtc/tgcalls build-system/GGPatches/tgcalls-call-camera-masks.patch
+
+      - name: Cache Bazel Build Artifacts
+        uses: actions/cache@v4
+        with:
+          path: ~/telegram-bazel-cache
+          key: bazel-cache-${{ runner.os }}-${{ hashFiles('MODULE.bazel', 'versions.json') }}
+          restore-keys: |
+            bazel-cache-${{ runner.os }}-
+
+      - name: Build IPA via Bazel (Make.py)
+        run: |
+          mkdir -p build-output/ipa
+
+          # Make.py automatically fetches the exact pinned Bazel binary and builds //Telegram:Telegram
+          python3 build-system/Make/Make.py \
+            --overrideXcodeVersion \
+            --overrideBazelVersion \
+            --cacheDir ~/telegram-bazel-cache \
+            build \
+            --configurationPath "build-system/appcenter-configuration.json" \
+            --codesigningInformationPath "build-system/fake-codesigning" \
+            --buildNumber 1 \
+            --configuration release_arm64 \
+            --outputBuildArtifactsPath "build-output/ipa"
+
+          if [ -f "build-output/ipa/Telegram.ipa" ]; then
+            cp "build-output/ipa/Telegram.ipa" "build-output/ipa/Ghostgram.ipa"
+          fi
+
+      - name: Upload IPA Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Ghostgram-iOS-IPA
+          path: build-output/ipa/*.ipa
+          if-no-files-found: error
