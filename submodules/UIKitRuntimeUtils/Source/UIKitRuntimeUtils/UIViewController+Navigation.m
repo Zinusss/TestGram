@@ -2,6 +2,7 @@
 
 #import <ObjCRuntimeUtils/RuntimeUtils.h>
 #import <objc/runtime.h>
+#import <objc/message.h>
 
 #import "NSWeakReference.h"
 #import <UIKitRuntimeUtils/UIKitUtils.h>
@@ -325,19 +326,35 @@ static NSMutableArray<CALayerSpringParametersOverride *> *currentSpringParameter
 // (EdgeEffectView, WallpaperEdgeEffectNode) and never used UIKit's, so all four are hidden on every
 // scroll view before it is laid out, i.e. before its first frame. `willMoveToWindow:` and
 // `didMoveToWindow` would miss ASScrollView, which overrides both without calling super.
-API_AVAILABLE(ios(26.0))
-static void ggHideSystemEdgeEffect(UIScrollEdgeEffect *effect) {
-    if (effect != nil && !effect.isHidden) {
-        effect.hidden = YES;
+static void ggHideSystemEdgeEffect(id effect) {
+    if (effect != nil) {
+        SEL isHiddenSel = @selector(isHidden);
+        SEL setHiddenSel = @selector(setHidden:);
+        if ([effect respondsToSelector:isHiddenSel] && [effect respondsToSelector:setHiddenSel]) {
+            if (!((BOOL (*)(id, SEL))objc_msgSend)(effect, isHiddenSel)) {
+                ((void (*)(id, SEL, BOOL))objc_msgSend)(effect, setHiddenSel, YES);
+            }
+        }
     }
 }
 
-API_AVAILABLE(ios(26.0))
 static void ggHideSystemEdgeEffects(UIScrollView *scrollView) {
-    ggHideSystemEdgeEffect(scrollView.topEdgeEffect);
-    ggHideSystemEdgeEffect(scrollView.bottomEdgeEffect);
-    ggHideSystemEdgeEffect(scrollView.leftEdgeEffect);
-    ggHideSystemEdgeEffect(scrollView.rightEdgeEffect);
+    SEL topSel = NSSelectorFromString(@"topEdgeEffect");
+    if ([scrollView respondsToSelector:topSel]) {
+        ggHideSystemEdgeEffect(((id (*)(id, SEL))objc_msgSend)(scrollView, topSel));
+    }
+    SEL bottomSel = NSSelectorFromString(@"bottomEdgeEffect");
+    if ([scrollView respondsToSelector:bottomSel]) {
+        ggHideSystemEdgeEffect(((id (*)(id, SEL))objc_msgSend)(scrollView, bottomSel));
+    }
+    SEL leftSel = NSSelectorFromString(@"leftEdgeEffect");
+    if ([scrollView respondsToSelector:leftSel]) {
+        ggHideSystemEdgeEffect(((id (*)(id, SEL))objc_msgSend)(scrollView, leftSel));
+    }
+    SEL rightSel = NSSelectorFromString(@"rightEdgeEffect");
+    if ([scrollView respondsToSelector:rightSel]) {
+        ggHideSystemEdgeEffect(((id (*)(id, SEL))objc_msgSend)(scrollView, rightSel));
+    }
 }
 
 /// Wraps the class's own `layoutSubviews`. A class that only inherits it is skipped: replacing an
