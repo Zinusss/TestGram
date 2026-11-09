@@ -103,6 +103,7 @@ jobs:
             fi
           }
           apply_patch build-system/bazel-rules/rules_apple build-system/GGPatches/rules_apple-strip-shell-env.patch
+          apply_patch build-system/bazel-rules/rules_apple build-system/GGPatches/rules_apple-ignore-expired-profile.patch
           apply_patch submodules/TgVoipWebrtc/tgcalls build-system/GGPatches/tgcalls-call-camera-masks.patch
 
       - name: Cache Bazel Build Artifacts

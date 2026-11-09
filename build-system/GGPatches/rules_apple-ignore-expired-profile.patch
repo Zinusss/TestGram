@@ -1,0 +1,15 @@
+diff --git a/tools/plisttool/plisttool.py b/tools/plisttool/plisttool.py
+index 2b7eeccc..ec090d42 100644
+--- a/tools/plisttool/plisttool.py
++++ b/tools/plisttool/plisttool.py
+@@ -1211,8 +1211,8 @@ class EntitlementsTask(PlistToolTask):
+     # integer), but just checking "ExpirationDate" seems better.
+     expire = self._profile_metadata.get('ExpirationDate')
+     if expire and expire < datetime.datetime.now():
+-      raise PlistToolError(ENTITLEMENTS_PROFILE_HAS_EXPIRED % (
+-          self.target, expire.isoformat()))
++      # GHOST: allow expired profiles for ad-hoc / TrollStore signing
++      pass
+ 
+     # There is a "Platform" key (contains an array), but looking at at some
+     # profiles used by working watchOS targets, they still say "iOS", so it
