@@ -106,6 +106,9 @@ jobs:
           apply_patch build-system/bazel-rules/rules_apple build-system/GGPatches/rules_apple-ignore-expired-profile.patch
           apply_patch submodules/TgVoipWebrtc/tgcalls build-system/GGPatches/tgcalls-call-camera-masks.patch
 
+          # 3. Ensure all build scripts across repo and submodules are executable
+          find . -type f \( -name "*.sh" -o -name "*.py" \) -exec chmod +x {} +
+
       - name: Cache Bazel Build Artifacts
         uses: actions/cache@v4
         with:
