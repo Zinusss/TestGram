@@ -16,17 +16,51 @@ jobs:
     timeout-minutes: 360
 
     steps:
-      - name: Checkout repository & submodules
+      - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          submodules: recursive
           fetch-depth: 1
 
-      - name: Verify and sync submodules
+      - name: Checkout and verify submodules
         run: |
           git submodule sync --recursive
-          git submodule update --init --recursive --force
-          ls -la build-system/bazel-rules/rules_swift
+
+          # 1. First, explicitly update critical Bazel rules and tgcalls
+          echo "Updating Bazel rules submodules..."
+          git submodule update --init --force \
+            build-system/bazel-rules/rules_xcodeproj \
+            build-system/bazel-rules/rules_apple \
+            build-system/bazel-rules/rules_swift \
+            build-system/bazel-rules/apple_support \
+            submodules/TgVoipWebrtc/tgcalls
+
+          # 2. Update remaining submodules in parallel
+          echo "Updating remaining submodules..."
+          git submodule update --init --recursive -j 8 || true
+
+          # 3. Direct clone fallback for the 4 critical Bazel rules
+          for rule in rules_xcodeproj rules_apple rules_swift apple_support; do
+            if [ ! -d "build-system/bazel-rules/$rule" ] || [ -z "$(ls -A build-system/bazel-rules/$rule 2>/dev/null)" ]; then
+              echo "Warning: build-system/bazel-rules/$rule missing, cloning directly..."
+              url=$(git config -f .gitmodules --get "submodule.build-system/bazel-rules/$rule.url")
+              commit=$(git ls-tree HEAD "build-system/bazel-rules/$rule" | awk '{print $3}')
+              rm -rf "build-system/bazel-rules/$rule"
+              git clone "$url" "build-system/bazel-rules/$rule"
+              if [ -n "$commit" ]; then
+                git -C "build-system/bazel-rules/$rule" checkout "$commit"
+              fi
+            fi
+            echo "Verified build-system/bazel-rules/$rule: $(ls -A build-system/bazel-rules/$rule | wc -l) files"
+          done
+
+          # 4. Direct clone fallback for tgcalls if needed
+          if [ ! -d "submodules/TgVoipWebrtc/tgcalls" ] || [ -z "$(ls -A submodules/TgVoipWebrtc/tgcalls 2>/dev/null)" ]; then
+            echo "Warning: tgcalls missing, cloning directly..."
+            rm -rf submodules/TgVoipWebrtc/tgcalls
+            git clone https://github.com/TelegramMessenger/tgcalls.git submodules/TgVoipWebrtc/tgcalls
+            git -C submodules/TgVoipWebrtc/tgcalls checkout 8d6dd4c61e62965cb574c29e39327a4686066381
+          fi
+          echo "Submodules ready."
 
       - name: Select Xcode
         run: |
