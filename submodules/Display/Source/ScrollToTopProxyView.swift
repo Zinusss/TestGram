@@ -19,12 +19,8 @@ class ScrollToTopView: UIScrollView, UIScrollViewDelegate {
             // whatever passes under it. The chat → profile expansion showed it as a haze over the top of the screen and
             // its corners, where the card's edge moves against the chat.
             for selName in ["topEdgeEffect", "bottomEdgeEffect", "leftEdgeEffect", "rightEdgeEffect"] {
-                let sel = Selector(selName)
-                if self.responds(to: sel), let effect = (self as NSObject).value(forKey: selName) as? NSObject {
-                    let setHiddenSel = Selector("setHidden:")
-                    if effect.responds(to: setHiddenSel) {
-                        effect.setValue(true, forKey: "hidden")
-                    }
+                if self.responds(to: NSSelectorFromString(selName)), let effect = (self as NSObject).value(forKey: selName) as? NSObject {
+                    effect.setValue(true, forKey: "hidden")
                 }
             }
         }
