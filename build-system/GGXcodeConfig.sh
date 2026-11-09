@@ -19,7 +19,7 @@ cd "$(dirname "$0")/.."
 OUT_DIR="build-system/GGXcode"
 OUT_RC="build-system/GGXcode.bazelrc"
 
-developer_dir="$(xcode-select -p)"
+developer_dir="$(python3 -c "import os, sys; print(os.path.realpath(sys.argv[1]))" "$(xcode-select -p)")"
 run() { env -i DEVELOPER_DIR="$developer_dir" PATH=/usr/bin:/bin "$@"; }
 
 version_output="$(run xcodebuild -version)"

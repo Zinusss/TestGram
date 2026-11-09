@@ -45,6 +45,8 @@ apply_patch() {
 }
 # rules_apple's strip action ignores --action_env (see GGXcodeConfig.sh).
 apply_patch build-system/bazel-rules/rules_apple build-system/GGPatches/rules_apple-strip-shell-env.patch
+apply_patch build-system/bazel-rules/rules_apple build-system/GGPatches/rules_apple-ignore-expired-profile.patch
+apply_patch build-system/bazel-rules/rules_swift build-system/GGPatches/rules_swift-developer-dir-symlink.patch
 # Masks and the virtual camera in calls (W3-2): the frame hook in tgcalls' camera capturer.
 apply_patch submodules/TgVoipWebrtc/tgcalls build-system/GGPatches/tgcalls-call-camera-masks.patch
 

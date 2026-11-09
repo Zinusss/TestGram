@@ -1,0 +1,20 @@
+diff --git a/tools/worker/hermetic_symlink.cc b/tools/worker/hermetic_symlink.cc
+index 6f4e40c3..f6690359 100644
+--- a/tools/worker/hermetic_symlink.cc
++++ b/tools/worker/hermetic_symlink.cc
+@@ -70,6 +70,15 @@ bool EnsureDirectorySymlink(const std::filesystem::path& link,
+     if (!read_ec && existing == target) {
+       return true;
+     }
++    std::error_code eq_ec;
++    if (std::filesystem::equivalent(link, target, eq_ec)) {
++      return true;
++    }
++    std::filesystem::remove(link, eq_ec);
++    std::filesystem::create_directory_symlink(target, link, ec);
++    if (!ec) {
++      return true;
++    }
+     std::cerr << "error: symlink " << link << " already exists but points to '"
+               << (read_ec ? std::string("<unreadable>") : existing.string())
+               << "' instead of '" << target.string() << "'\n";

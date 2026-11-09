@@ -64,7 +64,9 @@ jobs:
 
       - name: Select Xcode
         run: |
-          sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+          REAL_DEV_DIR=$(python3 -c "import os; print(os.path.realpath('/Applications/Xcode.app/Contents/Developer'))")
+          echo "Selecting Developer dir: $REAL_DEV_DIR"
+          sudo xcode-select -s "$REAL_DEV_DIR"
           xcodebuild -version
 
       - name: Set up Ad-hoc / Self-Signed Keychain
@@ -104,6 +106,7 @@ jobs:
           }
           apply_patch build-system/bazel-rules/rules_apple build-system/GGPatches/rules_apple-strip-shell-env.patch
           apply_patch build-system/bazel-rules/rules_apple build-system/GGPatches/rules_apple-ignore-expired-profile.patch
+          apply_patch build-system/bazel-rules/rules_swift build-system/GGPatches/rules_swift-developer-dir-symlink.patch
           apply_patch submodules/TgVoipWebrtc/tgcalls build-system/GGPatches/tgcalls-call-camera-masks.patch
 
           # 3. Ensure pkg-config is available in Bazel PATH (/usr/local/bin)
