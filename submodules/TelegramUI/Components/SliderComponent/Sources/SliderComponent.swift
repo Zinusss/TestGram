@@ -205,98 +205,12 @@ public final class SliderComponent: Component {
             
             let size = CGSize(width: availableSize.width, height: 44.0)
             
-            #if false
-            if #available(iOS 26.0, *), component.useNative {
-                if let sliderView = self.sliderView {
-                    self.sliderView = nil
-                    sliderView.removeFromSuperview()
-                }
-
-                let sliderView: SliderView
-                if let current = self.nativeSliderView {
-                    sliderView = current
-                } else {
-                    sliderView = SliderView()
-                    sliderView.disablesInteractiveTransitionGestureRecognizer = true
-                    sliderView.addTarget(self, action: #selector(self.sliderValueChanged), for: .valueChanged)
-                    sliderView.layer.allowsGroupOpacity = true
-                    
-                    self.addSubview(self.nativeTrackBackgroundView)
-                    self.addSubview(self.nativeTrackForegroundView)
-                    self.addSubview(sliderView)
-                    self.nativeSliderView = sliderView
-                    
-                    switch component.content {
-                    case let .continuous(continuous):
-                        sliderView.minimumValue = Float(continuous.minValue ?? continuous.range.lowerBound)
-                        sliderView.maximumValue = Float(continuous.range.upperBound)
-                    case let .discrete(discrete):
-                        sliderView.minimumValue = 0.0
-                        sliderView.maximumValue = Float(discrete.valueCount - 1)
-                        sliderView.trackConfiguration = .init(numberOfTicks: discrete.valueCount)
-                    }
-                }
-                switch component.content {
-                case let .continuous(continuous):
-                    sliderView.minimumValue = Float(continuous.minValue ?? continuous.range.lowerBound)
-                    sliderView.maximumValue = Float(continuous.range.upperBound)
-                    sliderView.value = Float(continuous.value)
-                case let .discrete(discrete):
-                    sliderView.minimumValue = 0.0
-                    sliderView.maximumValue = Float(discrete.valueCount - 1)
-                    sliderView.value = Float(discrete.value)
-                }
-
-                let useCenteredNativeTrack: Bool
-                if case let .continuous(continuous) = component.content, continuous.range.lowerBound < continuous.startValue && continuous.startValue < continuous.range.upperBound {
-                    useCenteredNativeTrack = true
-                } else {
-                    useCenteredNativeTrack = false
-                }
-
-                if useCenteredNativeTrack {
-                    sliderView.minimumTrackTintColor = UIColor.clear
-                    sliderView.maximumTrackTintColor = UIColor.clear
-
-                    let trackHeight = component.trackHeight ?? 4.0
-                    let trackFrame = CGRect(origin: CGPoint(x: 0.0, y: floorToScreenPixels((size.height - trackHeight) * 0.5)), size: CGSize(width: availableSize.width, height: trackHeight))
-                    self.nativeTrackBackgroundView.backgroundColor = component.trackBackgroundColor
-                    self.nativeTrackBackgroundView.layer.cornerRadius = trackHeight * 0.5
-                    self.nativeTrackBackgroundView.alpha = component.isEnabled ? 1.0 : 0.3
-                    transition.setFrame(view: self.nativeTrackBackgroundView, frame: trackFrame)
-
-                    if case let .continuous(continuous) = component.content {
-                        let rangeDistance = max(continuous.range.upperBound - continuous.range.lowerBound, CGFloat.ulpOfOne)
-                        let startPosition = min(max((continuous.startValue - continuous.range.lowerBound) / rangeDistance, 0.0), 1.0) * trackFrame.width
-                        let valuePosition = min(max((continuous.value - continuous.range.lowerBound) / rangeDistance, 0.0), 1.0) * trackFrame.width
-                        let foregroundFrame = CGRect(
-                            origin: CGPoint(x: trackFrame.minX + min(startPosition, valuePosition), y: trackFrame.minY),
-                            size: CGSize(width: abs(valuePosition - startPosition), height: trackFrame.height)
-                        )
-                        self.nativeTrackForegroundView.backgroundColor = component.trackForegroundColor
-                        self.nativeTrackForegroundView.layer.cornerRadius = trackHeight * 0.5
-                        self.nativeTrackForegroundView.alpha = component.isEnabled ? 1.0 : 0.3
-                        transition.setFrame(view: self.nativeTrackForegroundView, frame: foregroundFrame)
-                    }
-                } else {
-                    sliderView.minimumTrackTintColor = component.trackForegroundColor
-                    sliderView.maximumTrackTintColor = component.trackBackgroundColor
-                    self.nativeTrackBackgroundView.frame = CGRect()
-                    self.nativeTrackForegroundView.frame = CGRect()
-                }
-                sliderView.isEnabled = component.isEnabled
-                sliderView.alpha = component.isEnabled ? 1.0 : 0.3
-                
-                transition.setFrame(view: sliderView, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: availableSize.width, height: 44.0)))
-            } else
-            #endif
-            {
-                self.nativeTrackBackgroundView.frame = CGRect()
-                self.nativeTrackForegroundView.frame = CGRect()
-                if let nativeSliderView = self.nativeSliderView {
-                    self.nativeSliderView = nil
-                    nativeSliderView.removeFromSuperview()
-                }
+            self.nativeTrackBackgroundView.frame = CGRect()
+            self.nativeTrackForegroundView.frame = CGRect()
+            if let nativeSliderView = self.nativeSliderView {
+                self.nativeSliderView = nil
+                nativeSliderView.removeFromSuperview()
+            }
 
                 var internalIsTrackingUpdated: ((Bool) -> Void)?
                 if let isTrackingUpdated = component.isTrackingUpdated {
@@ -417,7 +331,6 @@ public final class SliderComponent: Component {
                 
                 transition.setFrame(view: sliderView, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: availableSize.width, height: 44.0)))
                 sliderView.hitTestEdgeInsets = UIEdgeInsets(top: 0.0, left: 0.0, bottom: 0.0, right: 0.0)
-            }
             
             return size
         }
