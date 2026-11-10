@@ -614,9 +614,13 @@ extension WalletContextImpl {
                     active.request = try await self.authorization.withSession(active.authorization) {
                         try await self.runtime.decodeTonConnectRequest(envelope.body, wallet: wallet, session: session, now: now, operationId: active.id)
                     }
-                } catch let error as TonConnectWireFailure {
-                    guard error.requestId != nil else { throw error }
-                    active.validationError = error
+                } catch {
+                    if let error = error as? TonConnectWireFailure {
+                        guard error.requestId != nil else { throw error }
+                        active.validationError = error
+                    } else {
+                        throw error
+                    }
                 }
                 active.wallet = wallet
                 try self.checkTonConnect(active)
