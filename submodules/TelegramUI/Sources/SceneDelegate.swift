@@ -83,8 +83,10 @@ import UIKit
         appDelegate.handleShortcutItem(shortcutItem, completionHandler: completionHandler)
     }
 
+    #if false
     @available(iOS 26.0, *)
     func preferredWindowingControlStyle(for windowScene: UIWindowScene) -> UIWindowScene.WindowingControlStyle {
         return .minimal
     }
+    #endif
 }

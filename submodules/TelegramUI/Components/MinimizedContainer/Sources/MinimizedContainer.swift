@@ -371,7 +371,9 @@ public class MinimizedContainerImpl: ASDisplayNode, MinimizedContainer, ASScroll
             // UIKit's automatic top edge effect samples what is behind the container (the screen under it) and blurs it
             // at the scroll view's top: it showed as a blur over the chat's navigation bar while closing a minimized app
             // slid the scroll view down. The container draws its own edges.
-            self.scrollView.topEdgeEffect.isHidden = true
+            if self.scrollView.responds(to: NSSelectorFromString("topEdgeEffect")), let effect = (self.scrollView as NSObject).value(forKey: "topEdgeEffect") as? NSObject {
+                effect.setValue(true, forKey: "hidden")
+            }
         }
 
         super.init()

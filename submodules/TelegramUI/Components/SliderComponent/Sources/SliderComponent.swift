@@ -205,6 +205,7 @@ public final class SliderComponent: Component {
             
             let size = CGSize(width: availableSize.width, height: 44.0)
             
+            #if false
             if #available(iOS 26.0, *), component.useNative {
                 if let sliderView = self.sliderView {
                     self.sliderView = nil
@@ -287,7 +288,9 @@ public final class SliderComponent: Component {
                 sliderView.alpha = component.isEnabled ? 1.0 : 0.3
                 
                 transition.setFrame(view: sliderView, frame: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: availableSize.width, height: 44.0)))
-            } else {
+            } else
+            #endif
+            {
                 self.nativeTrackBackgroundView.frame = CGRect()
                 self.nativeTrackForegroundView.frame = CGRect()
                 if let nativeSliderView = self.nativeSliderView {
