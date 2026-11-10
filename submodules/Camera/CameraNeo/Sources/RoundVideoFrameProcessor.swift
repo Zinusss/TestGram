@@ -34,6 +34,15 @@ private struct ColorConversion {
     let offset: SIMD4<Float>
 }
 
+private final class RetainedMetalResources: @unchecked Sendable {
+    let pixelBuffers: [CVPixelBuffer]
+    let textures: [CVMetalTexture]
+    init(pixelBuffers: [CVPixelBuffer], textures: [CVMetalTexture]) {
+        self.pixelBuffers = pixelBuffers
+        self.textures = textures
+    }
+}
+
 struct VideoFrameSource {
     let pixelBuffer: CVPixelBuffer
     let formatDescription: CMFormatDescription
@@ -490,14 +499,16 @@ final class RoundVideoFrameProcessor {
             encoder.endEncoding()
         }
 
-        let retainedPixelBuffers = [primary.pixelBuffer, effectiveSecondary.pixelBuffer, outputPixelBuffer]
-        let retainedTextures = [
-            primaryTextures.y,
-            primaryTextures.cbcr,
-            secondaryTextures.y,
-            secondaryTextures.cbcr,
-            outputTexture
-        ]
+        let retainedResources = RetainedMetalResources(
+            pixelBuffers: [primary.pixelBuffer, effectiveSecondary.pixelBuffer, outputPixelBuffer],
+            textures: [
+                primaryTextures.y,
+                primaryTextures.cbcr,
+                secondaryTextures.y,
+                secondaryTextures.cbcr,
+                outputTexture
+            ]
+        )
         self.isRendering = true
         statistics.renderSubmitted += 1
         statistics.pendingRenders += 1
@@ -524,10 +535,8 @@ final class RoundVideoFrameProcessor {
                     return
                 }
                 self.isRendering = false
-                withExtendedLifetime(retainedPixelBuffers) {
-                    withExtendedLifetime(retainedTextures) {
-                        completion(processedFrame)
-                    }
+                withExtendedLifetime(retainedResources) {
+                    completion(processedFrame)
                 }
             }
         }
