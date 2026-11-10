@@ -2475,7 +2475,7 @@ extension WalletContextImpl {
         requiresAuthorization: Bool? = nil,
         authorizationId: String? = nil,
         session borrowedSession: PasscodeSession? = nil,
-        _ operation: () async throws -> Value
+        _ operation: @escaping () async throws -> Value
     ) async throws -> Value {
         try Task.checkCancellation()
         if let borrowedSession {
