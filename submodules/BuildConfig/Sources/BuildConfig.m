@@ -111,12 +111,15 @@ API_AVAILABLE(ios(10))
         status = SecItemAdd((__bridge CFDictionaryRef)query, (CFTypeRef *)&result);
     }
     if (status != errSecSuccess) {
-        return nil;
+        return @"sideload";
     }
     NSString *accessGroup = [(__bridge NSDictionary *)result objectForKey:(__bridge NSString *)kSecAttrAccessGroup];
     NSArray *components = [accessGroup componentsSeparatedByString:@"."];
     NSString *bundleSeedID = [[components objectEnumerator] nextObject];
     CFRelease(result);
+    if (bundleSeedID.length == 0) {
+        return @"sideload";
+    }
     return bundleSeedID;
 }
 
@@ -216,19 +219,22 @@ API_AVAILABLE(ios(10))
         status = SecItemAdd((__bridge CFDictionaryRef)query, (CFTypeRef *)&result);
     }
     if (status != errSecSuccess) {
-        return nil;
+        return @"sideload";
     }
     NSString *accessGroup = [(__bridge NSDictionary *)result objectForKey:(__bridge NSString *)kSecAttrAccessGroup];
     NSArray *components = [accessGroup componentsSeparatedByString:@"."];
     NSString *bundleSeedID = [[components objectEnumerator] nextObject];
     CFRelease(result);
+    if (bundleSeedID.length == 0) {
+        return @"sideload";
+    }
     return bundleSeedID;
 }
 
 + (NSString * _Nullable)keychainAccessGroupForBaseAppBundleId:(NSString * _Nonnull)baseAppBundleId {
     NSString *bundleSeedId = [self bundleSeedId];
-    if (bundleSeedId.length == 0 || baseAppBundleId.length == 0) {
-        return nil;
+    if (bundleSeedId.length == 0 || [bundleSeedId isEqualToString:@"sideload"]) {
+        return baseAppBundleId;
     }
     return [bundleSeedId stringByAppendingFormat:@".%@", baseAppBundleId];
 }

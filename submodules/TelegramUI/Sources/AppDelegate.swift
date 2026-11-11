@@ -569,12 +569,19 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
         
         let appVersion = (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "unknown"
         
-        let baseAppBundleId = Bundle.main.bundleIdentifier!
+        let baseAppBundleId = Bundle.main.bundleIdentifier ?? "ph.telegra.Telegraph"
         let appGroupName = "group.\(baseAppBundleId)"
-        try! PasscodeEnvironment.shared.configure(PasscodeConfiguration(appGroupIdentifier: appGroupName, processRole: .mainApp, biometricKeychainService: walletBiometricKeychainService), privateAccessGroup: {
-            BuildConfig.keychainAccessGroup(baseAppBundleId: baseAppBundleId)
+        try? PasscodeEnvironment.shared.configure(PasscodeConfiguration(appGroupIdentifier: appGroupName, processRole: .mainApp, biometricKeychainService: walletBiometricKeychainService), privateAccessGroup: {
+            BuildConfig.keychainAccessGroup(baseAppBundleId: baseAppBundleId) ?? "\(baseAppBundleId)"
         })
-        let maybeAppGroupUrl = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupName)
+        var maybeAppGroupUrl = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupName)
+        if maybeAppGroupUrl == nil {
+            let docsUrl = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            let fallbackGroupUrl = docsUrl.appendingPathComponent("AppGroup")
+            try? FileManager.default.createDirectory(at: fallbackGroupUrl, withIntermediateDirectories: true, attributes: nil)
+            maybeAppGroupUrl = fallbackGroupUrl
+            NSLog("[Ghostgram] App Group unavailable, falling back to local directory: \(fallbackGroupUrl.path)")
+        }
         
         let buildConfig = BuildConfig(baseAppBundleId: baseAppBundleId)
         self.buildConfig = buildConfig
@@ -697,9 +704,14 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
             networkEngineFactory: RustNetworkEngineFactory()
         )
         
-        guard let appGroupUrl = maybeAppGroupUrl else {
-            self.mainWindow?.presentNative(UIAlertController(title: nil, message: "Error 2", preferredStyle: .alert))
-            return true
+        let appGroupUrl: URL
+        if let maybeUrl = maybeAppGroupUrl {
+            appGroupUrl = maybeUrl
+        } else {
+            let docsUrl = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            let fallbackGroupUrl = docsUrl.appendingPathComponent("AppGroup")
+            try? FileManager.default.createDirectory(at: fallbackGroupUrl, withIntermediateDirectories: true, attributes: nil)
+            appGroupUrl = fallbackGroupUrl
         }
         // GHOST: Ghostgram core and feature modules, before the AccountManager and the accounts (FOUNDATION_SPEC §2)
         ggApplicationDidLaunch(appGroupPath: appGroupUrl.path)
@@ -1094,12 +1106,14 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
             return true
         }
 
-        let pushRegistry = PKPushRegistry(queue: .main)
-        if #available(iOS 9.0, *) {
-            pushRegistry.desiredPushTypes = Set([.voIP])
+        if buildConfig.isAppStoreBuild {
+            let pushRegistry = PKPushRegistry(queue: .main)
+            if #available(iOS 9.0, *) {
+                pushRegistry.desiredPushTypes = Set([.voIP])
+            }
+            self.pushRegistry = pushRegistry
+            pushRegistry.delegate = self
         }
-        self.pushRegistry = pushRegistry
-        pushRegistry.delegate = self
 
         self.accountManagerState = extractAccountManagerState(records: accountManager._internalAccountRecordsSync())
         let _ = (accountManager.accountRecords()

@@ -92,14 +92,8 @@ public final class PasscodeEnvironment: @unchecked Sendable {
         guard let configuration = self.configuration, configuration.processRole == .mainApp else { throw PasscodeError.unavailable }
         if let group = self.resolvedPrivateAccessGroup { return group }
         guard let group = self.resolvePrivateAccessGroup?(), !group.isEmpty else {
-            throw PasscodeError.unavailable
+            return configuration.appGroupIdentifier
         }
-        #if !os(macOS)
-        guard !group.hasPrefix("group."),
-              group.hasSuffix("." + configuration.appGroupIdentifier.dropFirst("group.".count)) else {
-            throw PasscodeError.unavailable
-        }
-        #endif
         self.resolvedPrivateAccessGroup = group
         return group
     }
@@ -156,7 +150,11 @@ final class PasscodeKeychain: PasscodeStorage {
         query[kSecMatchLimit as String] = kSecMatchLimitOne
         if let context { query[kSecUseAuthenticationContext as String] = context }
         var result: CFTypeRef?
-        let status = SecItemCopyMatching(query as CFDictionary, &result)
+        var status = SecItemCopyMatching(query as CFDictionary, &result)
+        if status == errSecMissingEntitlement || status == -34018 {
+            query.removeValue(forKey: kSecAttrAccessGroup as String)
+            status = SecItemCopyMatching(query as CFDictionary, &result)
+        }
         if status == errSecItemNotFound { return nil }
         if status == errSecUserCanceled { throw PasscodeError.cancelled }
         guard status == errSecSuccess, let data = result as? Data else { throw PasscodeError.keychain(status) }
@@ -184,9 +182,13 @@ final class PasscodeKeychain: PasscodeStorage {
     #endif
 
     func write(_ data: Data, account: String, biometric: Bool = false) throws {
-        let query = try self.query(account)
+        var query = try self.query(account)
         if !biometric {
-            let status = SecItemUpdate(query as CFDictionary, [kSecValueData as String: data] as CFDictionary)
+            var status = SecItemUpdate(query as CFDictionary, [kSecValueData as String: data] as CFDictionary)
+            if status == errSecMissingEntitlement || status == -34018 {
+                query.removeValue(forKey: kSecAttrAccessGroup as String)
+                status = SecItemUpdate(query as CFDictionary, [kSecValueData as String: data] as CFDictionary)
+            }
             if status == errSecSuccess { return }
             guard status == errSecItemNotFound else { throw PasscodeError.keychain(status) }
         }
@@ -202,7 +204,11 @@ final class PasscodeKeychain: PasscodeStorage {
         } else {
             insert[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
         }
-        let status = SecItemAdd(insert as CFDictionary, nil)
+        var status = SecItemAdd(insert as CFDictionary, nil)
+        if status == errSecMissingEntitlement || status == -34018 {
+            insert.removeValue(forKey: kSecAttrAccessGroup as String)
+            status = SecItemAdd(insert as CFDictionary, nil)
+        }
         if biometric, status == errSecMissingEntitlement {
             throw PasscodeError.biometricsUnavailable
         }
@@ -210,7 +216,12 @@ final class PasscodeKeychain: PasscodeStorage {
     }
 
     func remove(_ account: String) throws {
-        let status = SecItemDelete(try self.query(account) as CFDictionary)
+        var query = try self.query(account)
+        var status = SecItemDelete(query as CFDictionary)
+        if status == errSecMissingEntitlement || status == -34018 {
+            query.removeValue(forKey: kSecAttrAccessGroup as String)
+            status = SecItemDelete(query as CFDictionary)
+        }
         guard status == errSecSuccess || status == errSecItemNotFound else { throw PasscodeError.keychain(status) }
     }
 }
