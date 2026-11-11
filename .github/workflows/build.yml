@@ -1,151 +1,64 @@
-name: Build Ghostgram iOS (.ipa)
+name: Build Custom Dylib
 
 on:
   workflow_dispatch:
-  push:
-    branches: [ master, main ]
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
 
 jobs:
-  build:
-    name: Build iOS IPA
-    runs-on: macos-15
-    timeout-minutes: 360
-
+  build-dylib:
+    runs-on: macos-13
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 1
-
-      - name: Checkout and verify submodules
+      - name: Create and Compile FixTelegram.dylib
         run: |
-          git submodule sync --recursive
+          cat << 'EOF' > FixTelegram.m
+          #import <Foundation/Foundation.h>
+          #import <Security/Security.h>
+          #import <objc/runtime.h>
 
-          # 1. First, explicitly update critical Bazel rules and tgcalls
-          echo "Updating Bazel rules submodules..."
-          git submodule update --init --force \
-            build-system/bazel-rules/rules_xcodeproj \
-            build-system/bazel-rules/rules_apple \
-            build-system/bazel-rules/rules_swift \
-            build-system/bazel-rules/apple_support \
-            submodules/TgVoipWebrtc/tgcalls
-
-          # 2. Update remaining submodules in parallel
-          echo "Updating remaining submodules..."
-          git submodule update --init --recursive -j 8 || true
-
-          # 3. Direct clone fallback for the 4 critical Bazel rules
-          for rule in rules_xcodeproj rules_apple rules_swift apple_support; do
-            if [ ! -d "build-system/bazel-rules/$rule" ] || [ -z "$(ls -A build-system/bazel-rules/$rule 2>/dev/null)" ]; then
-              echo "Warning: build-system/bazel-rules/$rule missing, cloning directly..."
-              url=$(git config -f .gitmodules --get "submodule.build-system/bazel-rules/$rule.url")
-              commit=$(git ls-tree HEAD "build-system/bazel-rules/$rule" | awk '{print $3}')
-              rm -rf "build-system/bazel-rules/$rule"
-              git clone "$url" "build-system/bazel-rules/$rule"
-              if [ -n "$commit" ]; then
-                git -C "build-system/bazel-rules/$rule" checkout "$commit"
-              fi
-            fi
-            echo "Verified build-system/bazel-rules/$rule: $(ls -A build-system/bazel-rules/$rule | wc -l) files"
-          done
-
-          # 4. Direct clone fallback for tgcalls if needed
-          if [ ! -d "submodules/TgVoipWebrtc/tgcalls" ] || [ -z "$(ls -A submodules/TgVoipWebrtc/tgcalls 2>/dev/null)" ]; then
-            echo "Warning: tgcalls missing, cloning directly..."
-            rm -rf submodules/TgVoipWebrtc/tgcalls
-            git clone https://github.com/TelegramMessenger/tgcalls.git submodules/TgVoipWebrtc/tgcalls
-            git -C submodules/TgVoipWebrtc/tgcalls checkout 8d6dd4c61e62965cb574c29e39327a4686066381
-          fi
-          echo "Submodules ready."
-
-      - name: Select Xcode
-        run: |
-          REAL_DEV_DIR=$(python3 -c "import os; print(os.path.realpath('/Applications/Xcode.app/Contents/Developer'))")
-          echo "Selecting Developer dir: $REAL_DEV_DIR"
-          sudo xcode-select -s "$REAL_DEV_DIR"
-          xcodebuild -version
-
-      - name: Set up Ad-hoc / Self-Signed Keychain
-        run: |
-          KEYCHAIN_NAME="build.keychain"
-          KEYCHAIN_PATH="$RUNNER_TEMP/$KEYCHAIN_NAME"
-          KEYCHAIN_PASSWORD="temp"
-
-          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-          security list-keychains -d user -s "$KEYCHAIN_PATH" $(security list-keychains -d user | tr -d '"')
-
-          # Import fake-codesigning certificate included in the repo
-          security import build-system/fake-codesigning/certs/SelfSigned.p12 \
-            -k "$KEYCHAIN_PATH" \
-            -P "" \
-            -T /usr/bin/codesign \
-            -T /usr/bin/security
-
-          security set-key-partition-list -S apple-tool:,apple: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
-
-      - name: Configure Xcode & Submodule Patches
-        run: |
-          # 1. Configure Xcode integration for Bazel
-          chmod +x build-system/GGXcodeConfig.sh
-          build-system/GGXcodeConfig.sh
-
-          # 2. Apply upstream patches required by Ghostgram
-          apply_patch() {
-            local dir="$1"
-            local patch="$2"
-            local abs_patch="$(pwd)/$patch"
-            if git -C "$dir" apply --check "$abs_patch" 2>/dev/null; then
-              git -C "$dir" apply "$abs_patch" && echo "Applied: $patch -> $dir"
-            fi
+          @implementation NSFileManager (SideloadFix)
+          + (void)load {
+              static dispatch_once_t onceToken;
+              dispatch_once(&onceToken, ^{
+                  Method orig = class_getInstanceMethod(self, @selector(containerURLForSecurityApplicationGroupIdentifier:));
+                  Method swiz = class_getInstanceMethod(self, @selector(fixed_containerURLForSecurityApplicationGroupIdentifier:));
+                  if (orig && swiz) method_exchangeImplementations(orig, swiz);
+              });
           }
-          apply_patch build-system/bazel-rules/rules_apple build-system/GGPatches/rules_apple-strip-shell-env.patch
-          apply_patch build-system/bazel-rules/rules_apple build-system/GGPatches/rules_apple-ignore-expired-profile.patch
-          apply_patch build-system/bazel-rules/rules_swift build-system/GGPatches/rules_swift-developer-dir-symlink.patch
-          apply_patch submodules/TgVoipWebrtc/tgcalls build-system/GGPatches/tgcalls-call-camera-masks.patch
+          - (NSURL *)fixed_containerURLForSecurityApplicationGroupIdentifier:(NSString *)groupIdentifier {
+              NSString *docsDir = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject];
+              NSString *groupPath = [docsDir stringByAppendingPathComponent:@"AppGroup"];
+              [[NSFileManager defaultManager] createDirectoryAtPath:groupPath withIntermediateDirectories:YES attributes:nil error:nil];
+              return [NSURL fileURLWithPath:groupPath];
+          }
+          @end
 
-          # 3. Ensure pkg-config is available in Bazel PATH (/usr/local/bin)
-          sudo ln -sf /opt/homebrew/bin/pkg-config /usr/local/bin/pkg-config 2>/dev/null || true
+          static CFDictionaryRef stripAccessGroup(CFDictionaryRef query) {
+              if (!query) return NULL;
+              NSMutableDictionary *dict = [(__bridge NSDictionary *)query mutableCopy];
+              [dict removeObjectForKey:(__bridge id)kSecAttrAccessGroup];
+              return CFBridgingRetain(dict);
+          }
+          OSStatus fixed_SecItemAdd(CFDictionaryRef a, CFTypeRef *r) { CFDictionaryRef c = stripAccessGroup(a); OSStatus s = SecItemAdd(c, r); if (c) CFRelease(c); return s; }
+          OSStatus fixed_SecItemCopyMatching(CFDictionaryRef q, CFTypeRef *r) { CFDictionaryRef c = stripAccessGroup(q); OSStatus s = SecItemCopyMatching(c, r); if (c) CFRelease(c); return s; }
+          OSStatus fixed_SecItemUpdate(CFDictionaryRef q, CFDictionaryRef a) { CFDictionaryRef cq = stripAccessGroup(q); CFDictionaryRef ca = stripAccessGroup(a); OSStatus s = SecItemUpdate(cq, ca); if (cq) CFRelease(cq); if (ca) CFRelease(ca); return s; }
+          OSStatus fixed_SecItemDelete(CFDictionaryRef q) { CFDictionaryRef c = stripAccessGroup(q); OSStatus s = SecItemDelete(c); if (c) CFRelease(c); return s; }
 
-          # 4. Ensure all build scripts across repo and submodules are executable
-          find . -type f \( -name "*.sh" -o -name "*.py" -o -name "*.pl" -o -name "configure*" -o -name "pkg-config*" \) -exec chmod +x {} +
+          __attribute__((used)) static struct { const void *replacement; const void *replacee; } _interpose[]
+          __attribute__((section("__DATA,__interpose"))) = {
+              { (const void *)fixed_SecItemAdd, (const void *)SecItemAdd },
+              { (const void *)fixed_SecItemCopyMatching, (const void *)SecItemCopyMatching },
+              { (const void *)fixed_SecItemUpdate, (const void *)SecItemUpdate },
+              { (const void *)fixed_SecItemDelete, (const void *)SecItemDelete }
+          };
+          EOF
 
-      - name: Cache Bazel Build Artifacts
-        uses: actions/cache@v4
-        with:
-          path: ~/telegram-bazel-cache
-          key: bazel-cache-${{ runner.os }}-${{ hashFiles('MODULE.bazel', 'versions.json') }}
-          restore-keys: |
-            bazel-cache-${{ runner.os }}-
+          xcrun -sdk iphoneos clang -arch arm64 -dynamiclib -fobjc-arc \
+            -mios-version-min=14.0 \
+            -framework Foundation -framework Security \
+            -install_name @executable_path/Frameworks/FixTelegram.dylib \
+            FixTelegram.m -o FixTelegram.dylib
 
-      - name: Build IPA via Bazel (Make.py)
-        run: |
-          mkdir -p build-output/ipa
-
-          # Make.py automatically fetches the exact pinned Bazel binary and builds //Telegram:Telegram
-          python3 build-system/Make/Make.py \
-            --overrideXcodeVersion \
-            --overrideBazelVersion \
-            --cacheDir ~/telegram-bazel-cache \
-            build \
-            --configurationPath "build-system/appcenter-configuration.json" \
-            --codesigningInformationPath "build-system/fake-codesigning" \
-            --buildNumber 1 \
-            --configuration release_arm64 \
-            --outputBuildArtifactsPath "build-output/ipa"
-
-          if [ -f "build-output/ipa/Telegram.ipa" ]; then
-            cp "build-output/ipa/Telegram.ipa" "build-output/ipa/Ghostgram.ipa"
-          fi
-
-      - name: Upload IPA Artifact
+      - name: Upload Dylib Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Ghostgram-iOS-IPA
-          path: build-output/ipa/*.ipa
-          if-no-files-found: error
+          name: FixTelegram-dylib
+          path: FixTelegram.dylib
