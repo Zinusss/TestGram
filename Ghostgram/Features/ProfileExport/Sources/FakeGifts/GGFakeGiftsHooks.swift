@@ -132,7 +132,7 @@ private func ggFakeGiftMenuItems(_ menuContext: GGGiftViewMenuContext) -> [Conte
     }
     let context = menuContext.context
     let accountPeerId = context.account.peerId
-    weak let controller = menuContext.controller
+    weak var controller = menuContext.controller
 
     if let localId = GGFakeGiftsStore.localId(of: menuContext.reference, accountPeerId: accountPeerId) {
         return [

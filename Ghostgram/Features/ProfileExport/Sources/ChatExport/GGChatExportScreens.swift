@@ -83,7 +83,7 @@ enum GGChatExportMenu {
             }
             let context = peerInfo.context
             let peer = peerInfo.chatPeer ?? peerInfo.peer
-            weak let controller = peerInfo.controller
+            weak var controller = peerInfo.controller
             return [.action(ContextMenuActionItem(text: GGStrings.ChatExport.Menu.profileItem, icon: { theme in
                 return generateTintedImage(image: UIImage(bundleImageName: "Chat/Context Menu/Download"), color: theme.contextMenu.primaryColor)
             }, action: { contextController, _ in

@@ -72,7 +72,7 @@ enum GGLocalCreatorMode {
             return []
         }
         let accountContext = context.context
-        weak let controller = context.controller
+        weak var controller = context.controller
         let title = isEnabled ? GGStrings.Chats.LocalCreator.disable : GGStrings.Chats.LocalCreator.enable
         return [.action(ContextMenuActionItem(text: title, icon: { theme in
             return generateTintedImage(image: UIImage(bundleImageName: isEnabled ? "Chat/Context Menu/Lock" : "Chat/Context Menu/Edit"), color: theme.contextMenu.primaryColor)

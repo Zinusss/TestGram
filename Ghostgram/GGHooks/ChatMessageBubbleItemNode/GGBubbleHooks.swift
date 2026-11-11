@@ -41,7 +41,7 @@ func ggBubbleHandleDoubleTap(_ node: ChatMessageItemView, item: ChatMessageItem,
     }
     let context = item.context
     if GGMessageGestureHooks.isTripleTapWanted(message: message) {
-        weak let chatNode = item.controllerInteraction.chatControllerNode()
+        weak var chatNode = item.controllerInteraction.chatControllerNode()
         let stableId = item.message.stableId
         let deferred = GGMessageGestureHooks.deferDoubleTap(on: node.view, { [weak node] in
             // The cell may show another message by now.

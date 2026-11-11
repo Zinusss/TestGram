@@ -66,7 +66,7 @@ enum GGGhostChatTracking {
             }
             GGGhostChatTracking.readHiddenTail(context: context, peerId: peerId)
         case .willDisappear:
-            weak let controller = screen.controller
+            weak var controller = screen.controller
             GGGhostChatTracking.readHiddenTail(context: context, peerId: peerId)
             // A modal over the chat leaves it at the top of its navigation stack; a push or a pop
             // does not. Decide after the transition has started.

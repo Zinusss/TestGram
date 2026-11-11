@@ -77,7 +77,7 @@ final class RuntimeTests: XCTestCase {
     func testWeakReferenceClearsOnDealloc() {
         assertBalanced("weak") {
             var strong: TLObject? = leaf()
-            weak let weakRef = strong
+            weak var weakRef = strong
             XCTAssertNotNil(weakRef)
             strong = nil
             XCTAssertNil(weakRef)
