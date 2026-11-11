@@ -10,7 +10,7 @@ on:
 jobs:
   build-dylib:
     name: Build iOS Sideload Fix Dylibs
-    runs-on: macos-15
+    runs-on: macos-14
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
