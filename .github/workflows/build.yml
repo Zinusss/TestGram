@@ -4,9 +4,6 @@ on:
   workflow_dispatch:
   push:
     branches: [ master, main ]
-    paths-ignore:
-      - 'SideloadFix/**'
-      - '.github/workflows/build-dylib.yml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
