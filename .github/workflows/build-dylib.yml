@@ -1,80 +1,64 @@
-#import <Foundation/Foundation.h>
-#import <Security/Security.h>
-#import <objc/runtime.h>
+name: Build Custom Dylib
 
-// 1. Обхід чорного екрана: перенаправляємо App Group у локальну папку Documents/AppGroup
-@implementation NSFileManager (SideloadFix)
+on:
+  workflow_dispatch:
 
-+ (void)load {
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        Method orig = class_getInstanceMethod(self, @selector(containerURLForSecurityApplicationGroupIdentifier:));
-        Method swiz = class_getInstanceMethod(self, @selector(fixed_containerURLForSecurityApplicationGroupIdentifier:));
-        if (orig && swiz) {
-            method_exchangeImplementations(orig, swiz);
-        }
-    });
-}
+jobs:
+  build-dylib:
+    runs-on: macos-13
+    steps:
+      - name: Create and Compile FixTelegram.dylib
+        run: |
+          cat << 'EOF' > FixTelegram.m
+          #import <Foundation/Foundation.h>
+          #import <Security/Security.h>
+          #import <objc/runtime.h>
 
-- (NSURL *)fixed_containerURLForSecurityApplicationGroupIdentifier:(NSString *)groupIdentifier {
-    NSArray *paths = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
-    NSString *docsDir = [paths firstObject];
-    NSString *groupPath = [docsDir stringByAppendingPathComponent:@"AppGroup"];
-    
-    if (![[NSFileManager defaultManager] fileExistsAtPath:groupPath]) {
-        [[NSFileManager defaultManager] createDirectoryAtPath:groupPath 
-                                  withIntermediateDirectories:YES 
-                                                   attributes:nil 
-                                                        error:nil];
-    }
-    return [NSURL fileURLWithPath:groupPath];
-}
+          @implementation NSFileManager (SideloadFix)
+          + (void)load {
+              static dispatch_once_t onceToken;
+              dispatch_once(&onceToken, ^{
+                  Method orig = class_getInstanceMethod(self, @selector(containerURLForSecurityApplicationGroupIdentifier:));
+                  Method swiz = class_getInstanceMethod(self, @selector(fixed_containerURLForSecurityApplicationGroupIdentifier:));
+                  if (orig && swiz) method_exchangeImplementations(orig, swiz);
+              });
+          }
+          - (NSURL *)fixed_containerURLForSecurityApplicationGroupIdentifier:(NSString *)groupIdentifier {
+              NSString *docsDir = [NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES) firstObject];
+              NSString *groupPath = [docsDir stringByAppendingPathComponent:@"AppGroup"];
+              [[NSFileManager defaultManager] createDirectoryAtPath:groupPath withIntermediateDirectories:YES attributes:nil error:nil];
+              return [NSURL fileURLWithPath:groupPath];
+          }
+          @end
 
-@end
+          static CFDictionaryRef stripAccessGroup(CFDictionaryRef query) {
+              if (!query) return NULL;
+              NSMutableDictionary *dict = [(__bridge NSDictionary *)query mutableCopy];
+              [dict removeObjectForKey:(__bridge id)kSecAttrAccessGroup];
+              return CFBridgingRetain(dict);
+          }
+          OSStatus fixed_SecItemAdd(CFDictionaryRef a, CFTypeRef *r) { CFDictionaryRef c = stripAccessGroup(a); OSStatus s = SecItemAdd(c, r); if (c) CFRelease(c); return s; }
+          OSStatus fixed_SecItemCopyMatching(CFDictionaryRef q, CFTypeRef *r) { CFDictionaryRef c = stripAccessGroup(q); OSStatus s = SecItemCopyMatching(c, r); if (c) CFRelease(c); return s; }
+          OSStatus fixed_SecItemUpdate(CFDictionaryRef q, CFDictionaryRef a) { CFDictionaryRef cq = stripAccessGroup(q); CFDictionaryRef ca = stripAccessGroup(a); OSStatus s = SecItemUpdate(cq, ca); if (cq) CFRelease(cq); if (ca) CFRelease(ca); return s; }
+          OSStatus fixed_SecItemDelete(CFDictionaryRef q) { CFDictionaryRef c = stripAccessGroup(q); OSStatus s = SecItemDelete(c); if (c) CFRelease(c); return s; }
 
-// 2. Обхід крашу на коді/пошті: прибираємо вимогу платного Keychain Access Group
-static CFDictionaryRef stripAccessGroup(CFDictionaryRef query) {
-    if (!query) return NULL;
-    NSMutableDictionary *dict = [(__bridge NSDictionary *)query mutableCopy];
-    [dict removeObjectForKey:(__bridge id)kSecAttrAccessGroup];
-    return CFBridgingRetain(dict);
-}
+          __attribute__((used)) static struct { const void *replacement; const void *replacee; } _interpose[]
+          __attribute__((section("__DATA,__interpose"))) = {
+              { (const void *)fixed_SecItemAdd, (const void *)SecItemAdd },
+              { (const void *)fixed_SecItemCopyMatching, (const void *)SecItemCopyMatching },
+              { (const void *)fixed_SecItemUpdate, (const void *)SecItemUpdate },
+              { (const void *)fixed_SecItemDelete, (const void *)SecItemDelete }
+          };
+          EOF
 
-OSStatus fixed_SecItemAdd(CFDictionaryRef attributes, CFTypeRef *result) {
-    CFDictionaryRef clean = stripAccessGroup(attributes);
-    OSStatus status = SecItemAdd(clean, result);
-    if (clean) CFRelease(clean);
-    return status;
-}
+          xcrun -sdk iphoneos clang -arch arm64 -dynamiclib -fobjc-arc \
+            -mios-version-min=14.0 \
+            -framework Foundation -framework Security \
+            -install_name @executable_path/Frameworks/FixTelegram.dylib \
+            FixTelegram.m -o FixTelegram.dylib
 
-OSStatus fixed_SecItemCopyMatching(CFDictionaryRef query, CFTypeRef *result) {
-    CFDictionaryRef clean = stripAccessGroup(query);
-    OSStatus status = SecItemCopyMatching(clean, result);
-    if (clean) CFRelease(clean);
-    return status;
-}
-
-OSStatus fixed_SecItemUpdate(CFDictionaryRef query, CFDictionaryRef attributesToUpdate) {
-    CFDictionaryRef cleanQuery = stripAccessGroup(query);
-    CFDictionaryRef cleanAttrs = stripAccessGroup(attributesToUpdate);
-    OSStatus status = SecItemUpdate(cleanQuery, cleanAttrs);
-    if (cleanQuery) CFRelease(cleanQuery);
-    if (cleanAttrs) CFRelease(cleanAttrs);
-    return status;
-}
-
-OSStatus fixed_SecItemDelete(CFDictionaryRef query) {
-    CFDictionaryRef clean = stripAccessGroup(query);
-    OSStatus status = SecItemDelete(clean);
-    if (clean) CFRelease(clean);
-    return status;
-}
-
-// Системна таблиця заміни функцій (працює нативно без Cydia Substrate)
-__attribute__((used)) static struct { const void *replacement; const void *replacee; } _interpose[]
-__attribute__((section("__DATA,__interpose"))) = {
-    { (const void *)fixed_SecItemAdd, (const void *)SecItemAdd },
-    { (const void *)fixed_SecItemCopyMatching, (const void *)SecItemCopyMatching },
-    { (const void *)fixed_SecItemUpdate, (const void *)SecItemUpdate },
-    { (const void *)fixed_SecItemDelete, (const void *)SecItemDelete }
-};
+      - name: Upload Dylib Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FixTelegram-dylib
+          path: FixTelegram.dylib
