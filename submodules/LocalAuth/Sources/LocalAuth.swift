@@ -165,14 +165,13 @@ public struct LocalAuth {
         guard let resultDict = (result as! CFDictionary) as? [String: Any] else {
             return nil
         }
-        guard let accessGroup = resultDict[kSecAttrAccessGroup as String] as? String else {
-            return nil
+        if let accessGroup = resultDict[kSecAttrAccessGroup as String] as? String {
+            let components = accessGroup.components(separatedBy: ".")
+            if let seedId = components.first, !seedId.isEmpty {
+                return seedId
+            }
         }
-        let components = accessGroup.components(separatedBy: ".")
-        guard let seedId = components.first else {
-            return nil
-        }
-        return seedId;
+        return "sideload"
     }
     
     public static func getOrCreatePrivateKey(baseAppBundleId: String, keyId: Data) -> PrivateKey? {

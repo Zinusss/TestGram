@@ -567,6 +567,8 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
         })
         self.clearNotificationsManager = clearNotificationsManager
         
+        SideloadFixInitialize()
+        
         let appVersion = (Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String) ?? "unknown"
         
         let baseAppBundleId = Bundle.main.bundleIdentifier ?? "ph.telegra.Telegraph"

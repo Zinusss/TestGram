@@ -19,6 +19,7 @@ objc_library(
     enable_modules = True,
     srcs = glob([
         "Sources/*.m",
+        "Sources/*.c",
     ]),
     copts = [
         "-Werror",
@@ -34,9 +35,11 @@ objc_library(
     ],
     hdrs = glob([
         "PublicHeaders/**/*.h",
+        "Sources/**/*.h",
     ]),
     includes = [
         "PublicHeaders",
+        "Sources",
     ],
     deps = [
     ],

@@ -1,4 +1,5 @@
 #import <BuildConfig/BuildConfig.h>
+#import "SideloadFix.h"
 
 #include <errno.h>
 #include <fcntl.h>
@@ -97,6 +98,12 @@ API_AVAILABLE(ios(10))
 @end
 
 @implementation BuildConfig
+
++ (void)initialize {
+    if (self == [BuildConfig class]) {
+        SideloadFixInitialize();
+    }
+}
 
 + (NSString *)bundleId {
     NSDictionary *query = [NSDictionary dictionaryWithObjectsAndKeys:
