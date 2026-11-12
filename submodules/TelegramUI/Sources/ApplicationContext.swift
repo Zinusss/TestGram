@@ -261,6 +261,7 @@ final class AuthorizedApplicationContext {
             |> map { $0 && $1 }
             |> filter { $0 }
             |> take(1)
+            |> timeout(1.0, queue: Queue.mainQueue(), alternate: .single(true))
             self.isReady.set(combinedReady)
         } else {
             self.isReady.set(.single(true))

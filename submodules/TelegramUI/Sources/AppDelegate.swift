@@ -1418,7 +1418,9 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
             self.contextValue = context
             if let context = context {
                 setupLegacyComponents(context: context.context)
+                self.mainWindow.viewController = context.rootController
                 let isReady = context.isReady.get()
+                |> timeout(1.0, queue: .mainQueue(), alternate: .single(true))
                 contextReadyDisposable.set((isReady
                 |> filter { $0 }
                 |> take(1)
@@ -1487,8 +1489,15 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
                     }
                     |> take(1)
                     |> timeout(4.0, queue: .mainQueue(), alternate: .complete())
-                    |> deliverOnMainQueue).start(completed: {
+                    |> deliverOnMainQueue).start(next: { [weak self] context in
+                        if let self, let context = context {
+                            self.mainWindow.viewController = context.rootController
+                        }
+                    }, completed: {
                         Queue.mainQueue().after(0.75) {
+                            if let context = self.contextValue {
+                                self.mainWindow.viewController = context.rootController
+                            }
                             authContextValue.rootController.view.endEditing(true)
                             authContextValue.rootController.dismiss()
                         }
