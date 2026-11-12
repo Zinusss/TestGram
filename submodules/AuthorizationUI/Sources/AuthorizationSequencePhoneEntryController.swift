@@ -112,16 +112,30 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
     }
     
     func updateNavigationItems() {
-        guard let layout = self.validLayout, layout.size.width < 360.0 else {
-            return
-        }
-                
         if self.inProgress {
             let item = UIBarButtonItem(customDisplayNode: ProgressNavigationButtonNode(color: self.presentationData.theme.rootController.navigationBar.accentTextColor))
             self.navigationItem.rightBarButtonItem = item
-        } else {
-            self.navigationItem.rightBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Next, style: .done, target: self, action: #selector(self.nextPressed))
+            return
         }
+        
+        let isUkrainian = self.presentationData.strings.primaryComponent.languageCode.lowercased().hasPrefix("uk")
+        if self.controllerNode.isQrMode {
+            let title = isUkrainian ? "Телефон" : "Phone"
+            self.navigationItem.rightBarButtonItem = UIBarButtonItem(title: title, style: .plain, target: self, action: #selector(self.toggleQrModePressed))
+        } else {
+            if let layout = self.validLayout, layout.size.width < 360.0 {
+                self.navigationItem.rightBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Next, style: .done, target: self, action: #selector(self.nextPressed))
+            } else if let qrImage = PresentationResourcesRootController.navigationQrCodeIcon(self.presentationData.theme) {
+                self.navigationItem.rightBarButtonItem = UIBarButtonItem(image: qrImage, style: .plain, target: self, action: #selector(self.toggleQrModePressed))
+            } else {
+                let title = isUkrainian ? "QR-код" : "QR Code"
+                self.navigationItem.rightBarButtonItem = UIBarButtonItem(title: title, style: .plain, target: self, action: #selector(self.toggleQrModePressed))
+            }
+        }
+    }
+    
+    @objc private func toggleQrModePressed() {
+        self.controllerNode.setQrMode(!self.controllerNode.isQrMode)
     }
     
     public func updateData(countryCode: Int32, countryName: String?, number: String) {
@@ -150,6 +164,20 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
             strongSelf.view.endEditing(true)
             self?.present(debugController(sharedContext: strongSelf.sharedContext, context: nil, modal: true), in: .window(.root), with: ViewControllerPresentationArguments(presentationAnimation: .modalSheet))
         }, hasOtherAccounts: self.otherAccountPhoneNumbers.0 != nil)
+        self.controllerNode.toggleQrMode = { [weak self] in
+            guard let self else {
+                return
+            }
+            if self.controllerNode.isQrMode {
+                self.view.endEditing(true)
+            } else {
+                self.controllerNode.activateInput()
+            }
+            self.updateNavigationItems()
+            if let validLayout = self.validLayout {
+                self.containerLayoutUpdated(validLayout, transition: .animated(duration: 0.25, curve: .easeInOut))
+            }
+        }
         self.controllerNode.accountUpdated = { [weak self] account in
             guard let strongSelf = self else {
                 return
@@ -333,9 +361,11 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
                 self.controllerNode.willAnimateIn(buttonFrame: buttonFrame, buttonTitle: buttonTitle, animationSnapshot: animationSnapshot, textSnapshot: textSnapshot)
             }
             Queue.mainQueue().justDispatch {
-                self.controllerNode.activateInput()
+                if !self.controllerNode.isQrMode {
+                    self.controllerNode.activateInput()
+                }
             }
-        } else {
+        } else if !self.controllerNode.isQrMode {
             self.controllerNode.activateInput()
         }
     }
@@ -343,7 +373,7 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
     override public func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         
-        if !self.animatingIn {
+        if !self.animatingIn && !self.controllerNode.isQrMode {
             self.controllerNode.activateInput()
         }
     }

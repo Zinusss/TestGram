@@ -318,9 +318,17 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
     private let contactSyncNode: ContactSyncNode
     private let proceedNode: SolidRoundedButtonNode
     
-    private var qrNode: ASImageNode?
+    public private(set) var isQrMode: Bool = false
+    var toggleQrMode: (() -> Void)?
+    
+    private let qrContainerNode: ASDisplayNode
+    private let qrImageNode: ASImageNode
+    private let qrActivityIndicator: UIActivityIndicatorView
+    private let qrLoginButton: HighlightableButtonNode
+    
     private let exportTokenDisposable = MetaDisposable()
     private let tokenEventsDisposable = MetaDisposable()
+    private let qrCodeDisposable = MetaDisposable()
     var accountUpdated: ((UnauthorizedAccount) -> Void)?
     
     var retryPasskey: (() -> Void)?
@@ -427,6 +435,26 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         self.proceedNode.isEnabled = false
         self.proceedNode.accessibilityIdentifier = "Auth.PhoneEntry.ContinueButton"
 
+        self.qrContainerNode = ASDisplayNode()
+        self.qrContainerNode.backgroundColor = .white
+        self.qrContainerNode.cornerRadius = 18.0
+        self.qrContainerNode.clipsToBounds = true
+        self.qrContainerNode.isHidden = true
+        
+        self.qrImageNode = ASImageNode()
+        self.qrImageNode.displaysAsynchronously = false
+        
+        self.qrActivityIndicator = UIActivityIndicatorView(style: .medium)
+        self.qrActivityIndicator.color = .darkGray
+        self.qrActivityIndicator.hidesWhenStopped = true
+        
+        self.qrLoginButton = HighlightableButtonNode()
+        self.qrLoginButton.displaysAsynchronously = false
+        let isUkrainian = strings.primaryComponent.languageCode.lowercased().hasPrefix("uk")
+        let qrButtonTitle = isUkrainian ? "Швидкий вхід за QR-кодом" : "Quick Log In using QR Code"
+        self.qrLoginButton.setTitle(NSAttributedString(string: qrButtonTitle, font: Font.medium(17.0), textColor: theme.list.itemAccentColor), for: [])
+        self.qrLoginButton.accessibilityTraits = [.button]
+
         super.init()
         
         self.setViewBlock({
@@ -442,9 +470,14 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         self.addSubnode(self.phoneAndCountryNode)
         self.addSubnode(self.contactSyncNode)
         self.addSubnode(self.proceedNode)
+        self.addSubnode(self.qrContainerNode)
+        self.qrContainerNode.addSubnode(self.qrImageNode)
+        self.addSubnode(self.qrLoginButton)
         self.addSubnode(self.animationNode)
         self.addSubnode(self.managedAnimationNode)
         self.contactSyncNode.isHidden = true
+        
+        self.qrLoginButton.addTarget(self, action: #selector(self.qrLoginButtonPressed), forControlEvents: .touchUpInside)
         
         self.noticeNode.highlightAttributeAction = { attributes in
             if let _ = attributes[NSAttributedString.Key(rawValue: "URL")] {
@@ -486,7 +519,12 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         }
         
         self.proceedNode.pressed = { [weak self] in
-            self?.checkPhone?()
+            guard let self else { return }
+            if self.isQrMode {
+                self.setQrMode(false)
+            } else {
+                self.checkPhone?()
+            }
         }
         
         self.animationNode.completed = { [weak self] _ in
@@ -498,15 +536,14 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
     deinit {
         self.exportTokenDisposable.dispose()
         self.tokenEventsDisposable.dispose()
+        self.qrCodeDisposable.dispose()
     }
     
     override func didLoad() {
         super.didLoad()
         
+        self.qrContainerNode.view.addSubview(self.qrActivityIndicator)
         self.titleNode.view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.debugTap(_:))))
-        #if DEBUG && false
-        self.noticeNode.view.addGestureRecognizer(UITapGestureRecognizer(target: self, action: #selector(self.debugQrTap(_:))))
-        #endif
     }
     
     private var animationSnapshotView: UIView?
@@ -606,7 +643,16 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         let titleInset: CGFloat = layout.size.width > 320.0 ? 18.0 : 0.0
         let additionalBottomInset: CGFloat = layout.size.width > 320.0 ? 80.0 : 10.0
         
-        self.titleNode.attributedText = NSAttributedString(string: self.account == nil ? self.strings.Login_NewNumber : self.strings.Login_PhoneTitle, font: Font.bold(28.0), textColor: self.theme.list.itemPrimaryTextColor)
+        let isUkrainian = self.strings.primaryComponent.languageCode.lowercased().hasPrefix("uk")
+        
+        if self.isQrMode {
+            self.titleNode.attributedText = NSAttributedString(string: isUkrainian ? "Вхід за QR-кодом" : "Log in by QR Code", font: Font.bold(28.0), textColor: self.theme.list.itemPrimaryTextColor)
+            let noticeText = isUkrainian ? "1. Відкрийте Telegram на іншому пристрої\n2. Налаштування → Пристрої → Підключити пристрій\n3. Наведіть камеру на цей екран" : "1. Open Telegram on another device\n2. Settings → Devices → Link Desktop Device\n3. Point your camera at this screen"
+            self.noticeNode.attributedText = NSAttributedString(string: noticeText, font: Font.regular(15.0), textColor: self.theme.list.itemSecondaryTextColor, paragraphAlignment: .center)
+        } else {
+            self.titleNode.attributedText = NSAttributedString(string: self.account == nil ? self.strings.Login_NewNumber : self.strings.Login_PhoneTitle, font: Font.bold(28.0), textColor: self.theme.list.itemPrimaryTextColor)
+            self.noticeNode.attributedText = NSAttributedString(string: self.account == nil ? self.strings.ChangePhoneNumberNumber_Help : self.strings.Login_PhoneAndCountryHelp, font: Font.regular(17.0), textColor: self.theme.list.itemPrimaryTextColor, paragraphAlignment: .center)
+        }
         self.titleActivateAreaNode.accessibilityLabel = self.titleNode.attributedText?.string ?? ""
         
         // iPhone Duo: beside a side strip the content keeps to the band between the side insets. With equal
@@ -628,35 +674,72 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         let titleSize = self.titleNode.measure(CGSize(width: maximumWidth, height: CGFloat.greatestFiniteMagnitude))
         
         let noticeInset: CGFloat = self.account == nil ? 32.0 : 0.0
-        
-        let noticeSize = self.noticeNode.updateLayout(CGSize(width: min(274.0 + noticeInset, maximumWidth - 28.0), height: CGFloat.greatestFiniteMagnitude))
+        let noticeSize = self.noticeNode.updateLayout(CGSize(width: min(320.0, maximumWidth - 28.0), height: CGFloat.greatestFiniteMagnitude))
         let proceedHeight = self.proceedNode.updateLayout(width: bottomMaximumWidth - inset * 2.0, transition: transition)
         let proceedSize = CGSize(width: bottomMaximumWidth - inset * 2.0, height: proceedHeight)
         
-        var items: [AuthorizationLayoutItem] = [
-            AuthorizationLayoutItem(node: self.titleNode, size: titleSize, spacingBefore: AuthorizationLayoutItemSpacing(weight: titleInset, maxValue: titleInset), spacingAfter: AuthorizationLayoutItemSpacing(weight: 0.0, maxValue: 0.0)),
-            AuthorizationLayoutItem(node: self.noticeNode, size: noticeSize, spacingBefore: AuthorizationLayoutItemSpacing(weight: 18.0, maxValue: 18.0), spacingAfter: AuthorizationLayoutItemSpacing(weight: 0.0, maxValue: 0.0)),
-            AuthorizationLayoutItem(node: self.phoneAndCountryNode, size: CGSize(width: maximumWidth, height: 115.0), spacingBefore: AuthorizationLayoutItemSpacing(weight: 30.0, maxValue: 30.0), spacingAfter: AuthorizationLayoutItemSpacing(weight: 0.0, maxValue: 0.0)),
-        ]
-        
-        if layout.size.width > 320.0 {
-            items.insert(AuthorizationLayoutItem(node: self.animationNode, size: animationSize, spacingBefore: AuthorizationLayoutItemSpacing(weight: 10.0, maxValue: 10.0), spacingAfter: AuthorizationLayoutItemSpacing(weight: 0.0, maxValue: 0.0)), at: 0)
-            self.proceedNode.isHidden = false
-            self.animationNode.isHidden = false
-            self.animationNode.visibility = true
-        } else {
-            insets.top = navigationBarHeight
-            self.proceedNode.isHidden = true
+        var items: [AuthorizationLayoutItem] = []
+        if self.isQrMode {
             self.animationNode.isHidden = true
             self.managedAnimationNode.isHidden = true
-        }
-        
-        let contactSyncSize = self.contactSyncNode.updateLayout(width: maximumWidth)
-        if self.hasOtherAccounts {
-            self.contactSyncNode.isHidden = false
-            items.append(AuthorizationLayoutItem(node: self.contactSyncNode, size: contactSyncSize, spacingBefore: AuthorizationLayoutItemSpacing(weight: 14.0, maxValue: 14.0), spacingAfter: AuthorizationLayoutItemSpacing(weight: 0.0, maxValue: 0.0)))
-        } else {
+            self.phoneAndCountryNode.isHidden = true
             self.contactSyncNode.isHidden = true
+            self.qrLoginButton.isHidden = true
+            self.qrContainerNode.isHidden = false
+            
+            let qrCardSize = CGSize(width: 220.0, height: 220.0)
+            self.qrImageNode.frame = CGRect(x: 10.0, y: 10.0, width: 200.0, height: 200.0)
+            self.qrActivityIndicator.center = CGPoint(x: 110.0, y: 110.0)
+            
+            self.proceedNode.isHidden = false
+            self.proceedNode.isEnabled = true
+            self.proceedNode.title = isUkrainian ? "Увійти за номером телефону" : "Log in with phone number"
+            
+            items = [
+                AuthorizationLayoutItem(node: self.titleNode, size: titleSize, spacingBefore: AuthorizationLayoutItemSpacing(weight: titleInset, maxValue: titleInset), spacingAfter: AuthorizationLayoutItemSpacing(weight: 0.0, maxValue: 0.0)),
+                AuthorizationLayoutItem(node: self.qrContainerNode, size: qrCardSize, spacingBefore: AuthorizationLayoutItemSpacing(weight: 20.0, maxValue: 30.0), spacingAfter: AuthorizationLayoutItemSpacing(weight: 0.0, maxValue: 0.0)),
+                AuthorizationLayoutItem(node: self.noticeNode, size: noticeSize, spacingBefore: AuthorizationLayoutItemSpacing(weight: 18.0, maxValue: 24.0), spacingAfter: AuthorizationLayoutItemSpacing(weight: 0.0, maxValue: 0.0))
+            ]
+        } else {
+            self.qrContainerNode.isHidden = true
+            self.phoneAndCountryNode.isHidden = false
+            
+            self.proceedNode.title = self.strings.Login_Continue
+            self.proceedNode.isEnabled = !self.phoneAndCountryNode.phoneInputNode.number.isEmpty
+            
+            items = [
+                AuthorizationLayoutItem(node: self.titleNode, size: titleSize, spacingBefore: AuthorizationLayoutItemSpacing(weight: titleInset, maxValue: titleInset), spacingAfter: AuthorizationLayoutItemSpacing(weight: 0.0, maxValue: 0.0)),
+                AuthorizationLayoutItem(node: self.noticeNode, size: noticeSize, spacingBefore: AuthorizationLayoutItemSpacing(weight: 18.0, maxValue: 18.0), spacingAfter: AuthorizationLayoutItemSpacing(weight: 0.0, maxValue: 0.0)),
+                AuthorizationLayoutItem(node: self.phoneAndCountryNode, size: CGSize(width: maximumWidth, height: 115.0), spacingBefore: AuthorizationLayoutItemSpacing(weight: 30.0, maxValue: 30.0), spacingAfter: AuthorizationLayoutItemSpacing(weight: 0.0, maxValue: 0.0))
+            ]
+            
+            if layout.size.width > 320.0 {
+                items.insert(AuthorizationLayoutItem(node: self.animationNode, size: animationSize, spacingBefore: AuthorizationLayoutItemSpacing(weight: 10.0, maxValue: 10.0), spacingAfter: AuthorizationLayoutItemSpacing(weight: 0.0, maxValue: 0.0)), at: 0)
+                self.proceedNode.isHidden = false
+                self.animationNode.isHidden = false
+                self.animationNode.visibility = true
+            } else {
+                insets.top = navigationBarHeight
+                self.proceedNode.isHidden = true
+                self.animationNode.isHidden = true
+                self.managedAnimationNode.isHidden = true
+            }
+            
+            let isKeyboardActive = (layout.inputHeight ?? 0.0) > 0.0
+            if !isKeyboardActive {
+                self.qrLoginButton.isHidden = false
+                items.append(AuthorizationLayoutItem(node: self.qrLoginButton, size: CGSize(width: maximumWidth, height: 44.0), spacingBefore: AuthorizationLayoutItemSpacing(weight: 16.0, maxValue: 24.0), spacingAfter: AuthorizationLayoutItemSpacing(weight: 0.0, maxValue: 0.0)))
+            } else {
+                self.qrLoginButton.isHidden = true
+            }
+            
+            let contactSyncSize = self.contactSyncNode.updateLayout(width: maximumWidth)
+            if self.hasOtherAccounts {
+                self.contactSyncNode.isHidden = false
+                items.append(AuthorizationLayoutItem(node: self.contactSyncNode, size: contactSyncSize, spacingBefore: AuthorizationLayoutItemSpacing(weight: 14.0, maxValue: 14.0), spacingAfter: AuthorizationLayoutItemSpacing(weight: 0.0, maxValue: 0.0)))
+            } else {
+                self.contactSyncNode.isHidden = true
+            }
         }
         
         let buttonFrame: CGRect
@@ -668,11 +751,15 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         
         transition.updateFrame(node: self.proceedNode, frame: buttonFrame)
         
-        self.animationNode.updateLayout(size: animationSize)
+        if !self.isQrMode {
+            self.animationNode.updateLayout(size: animationSize)
+        }
         
         let _ = layoutAuthorizationItems(bounds: CGRect(origin: CGPoint(x: bandMinX, y: insets.top), size: CGSize(width: bandWidth, height: layout.size.height - insets.top - insets.bottom - additionalBottomInset)), items: items, transition: transition, failIfDoesNotFit: false)
         
-        transition.updateFrame(node: self.managedAnimationNode, frame: self.animationNode.frame)
+        if !self.isQrMode {
+            transition.updateFrame(node: self.managedAnimationNode, frame: self.animationNode.frame)
+        }
         
         self.titleActivateAreaNode.frame = self.titleNode.frame
         self.noticeActivateAreaNode.accessibilityLabel = self.noticeNode.attributedText?.string ?? ""
@@ -680,6 +767,9 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
     }
     
     func activateInput() {
+        guard !self.isQrMode else {
+            return
+        }
         self.phoneAndCountryNode.phoneInputNode.numberField.textField.becomeFirstResponder()
     }
     
@@ -710,19 +800,29 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         }
     }
     
-    @objc private func debugQrTap(_ recognizer: UITapGestureRecognizer) {
-        if self.qrNode == nil {
-            let qrNode = ASImageNode()
-            qrNode.frame = CGRect(origin: CGPoint(x: 16.0, y: 64.0 + 16.0), size: CGSize(width: 200.0, height: 200.0))
-            self.qrNode = qrNode
-            self.addSubnode(qrNode)
-            
-            self.refreshQrToken()
+    @objc private func qrLoginButtonPressed() {
+        self.setQrMode(true)
+    }
+    
+    public func setQrMode(_ enabled: Bool) {
+        guard self.isQrMode != enabled else {
+            return
         }
+        self.isQrMode = enabled
+        if enabled {
+            self.qrImageNode.image = nil
+            self.qrActivityIndicator.startAnimating()
+            self.refreshQrToken()
+        } else {
+            self.exportTokenDisposable.set(nil)
+            self.qrCodeDisposable.set(nil)
+            self.qrActivityIndicator.stopAnimating()
+        }
+        self.toggleQrMode?()
     }
     
     private func refreshQrToken() {
-        guard let account = self.account else {
+        guard self.isQrMode, let account = self.account else {
             return
         }
         let sharedContext = self.sharedContext
@@ -742,33 +842,33 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         
         self.exportTokenDisposable.set((tokenSignal
         |> deliverOnMainQueue).startStrict(next: { [weak self] result in
-            guard let strongSelf = self else {
+            guard let strongSelf = self, strongSelf.isQrMode else {
                 return
             }
             switch result {
             case let .displayToken(token):
                 var tokenString = token.value.base64EncodedString()
-                //print("export token \(tokenString)")
                 tokenString = tokenString.replacingOccurrences(of: "+", with: "-")
                 tokenString = tokenString.replacingOccurrences(of: "/", with: "_")
                 let urlString = "tg://login?token=\(tokenString)"
-                let _ = (qrCode(string: urlString, color: .black, backgroundColor: .white, icon: .none)
+                strongSelf.qrCodeDisposable.set((qrCode(string: urlString, color: .black, backgroundColor: .white, icon: .none)
                 |> deliverOnMainQueue).startStandalone(next: { _, generate in
-                    guard let strongSelf = self else {
+                    guard let strongSelf = self, strongSelf.isQrMode else {
                         return
                     }
                     
                     let context = generate(TransformImageArguments(corners: ImageCorners(), imageSize: CGSize(width: 200.0, height: 200.0), boundingSize: CGSize(width: 200.0, height: 200.0), intrinsicInsets: UIEdgeInsets()))
                     if let image = context?.generateImage() {
-                        strongSelf.qrNode?.image = image
+                        strongSelf.qrActivityIndicator.stopAnimating()
+                        strongSelf.qrImageNode.image = image
                     }
-                })
+                }))
                 
                 let timestamp = Int32(Date().timeIntervalSince1970)
                 let timeout = max(5, token.validUntil - timestamp)
                 strongSelf.exportTokenDisposable.set((Signal<Never, NoError>.complete()
                 |> delay(Double(timeout), queue: .mainQueue())).startStrict(completed: {
-                    guard let strongSelf = self else {
+                    guard let strongSelf = self, strongSelf.isQrMode else {
                         return
                     }
                     strongSelf.refreshQrToken()
@@ -783,8 +883,21 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
                 }))
                 strongSelf.refreshQrToken()
             case .loggedIn, .passwordRequested:
+                strongSelf.qrActivityIndicator.stopAnimating()
                 strongSelf.exportTokenDisposable.set(nil)
+                strongSelf.qrCodeDisposable.set(nil)
             }
+        }, error: { [weak self] _ in
+            guard let strongSelf = self, strongSelf.isQrMode else {
+                return
+            }
+            strongSelf.exportTokenDisposable.set((Signal<Never, NoError>.complete()
+            |> delay(3.0, queue: .mainQueue())).startStrict(completed: {
+                guard let strongSelf = self, strongSelf.isQrMode else {
+                    return
+                }
+                strongSelf.refreshQrToken()
+            }))
         }))
     }
 }
