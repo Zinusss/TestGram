@@ -573,17 +573,25 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
         
         let baseAppBundleId = Bundle.main.bundleIdentifier ?? "ph.telegra.Telegraph"
         let appGroupName = "group.\(baseAppBundleId)"
-        try? PasscodeEnvironment.shared.configure(PasscodeConfiguration(appGroupIdentifier: appGroupName, processRole: .mainApp, biometricKeychainService: walletBiometricKeychainService), privateAccessGroup: {
-            BuildConfig.keychainAccessGroup(baseAppBundleId: baseAppBundleId) ?? "\(baseAppBundleId)"
-        })
-        var maybeAppGroupUrl = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupName)
-        if maybeAppGroupUrl == nil {
-            let docsUrl = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-            let fallbackGroupUrl = docsUrl.appendingPathComponent("AppGroup")
-            try? FileManager.default.createDirectory(at: fallbackGroupUrl, withIntermediateDirectories: true, attributes: nil)
-            maybeAppGroupUrl = fallbackGroupUrl
-            NSLog("[Ghostgram] App Group unavailable, falling back to local directory: \(fallbackGroupUrl.path)")
+        
+        let docsUrl = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        let persistentGroupUrl = docsUrl.appendingPathComponent("AppGroup")
+        try? FileManager.default.createDirectory(at: persistentGroupUrl, withIntermediateDirectories: true, attributes: nil)
+        
+        var isRealAppGroup = false
+        var appGroupUrl = persistentGroupUrl
+        if let origGroupUrl = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupName), origGroupUrl.path.contains("Shared/AppGroup") {
+            isRealAppGroup = true
+            appGroupUrl = origGroupUrl
+        } else {
+            NSLog("[Ghostgram] Sideload detected: using persistent local directory: \(persistentGroupUrl.path)")
         }
+        
+        let keychainGroup = BuildConfig.keychainAccessGroup(baseAppBundleId: baseAppBundleId)
+        try? PasscodeEnvironment.shared.configure(PasscodeConfiguration(appGroupIdentifier: isRealAppGroup ? appGroupName : "", processRole: .mainApp, biometricKeychainService: walletBiometricKeychainService), privateAccessGroup: {
+            return keychainGroup
+        })
+        var maybeAppGroupUrl: URL? = appGroupUrl
         
         let buildConfig = BuildConfig(baseAppBundleId: baseAppBundleId)
         self.buildConfig = buildConfig
@@ -1433,13 +1441,26 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
 
                     self.mainWindow.debugAction = nil
                     self.mainWindow.viewController = context.rootController
+                    self.mainWindow.coveringView = nil
+                    
+                    context.rootController.view.alpha = 1.0
+                    context.rootController.view.layer.opacity = 1.0
+                    context.rootController.view.isHidden = false
+                    
+                    let windowSize = self.mainWindow.hostView.containerView.bounds.size
+                    if !windowSize.width.isZero && !windowSize.height.isZero {
+                        context.rootController.view.frame = CGRect(origin: .zero, size: windowSize)
+                        context.rootController.displayNode.frame = CGRect(origin: .zero, size: windowSize)
+                    }
                     
                     if firstTime {
                         let layer = context.rootController.view.layer
+                        layer.opacity = 1.0
                         layer.allowsGroupOpacity = true
                         layer.animateAlpha(from: 0.0, to: 1.0, duration: 0.2, completion: { [weak layer] _ in
                             if let layer = layer {
                                 layer.allowsGroupOpacity = false
+                                layer.opacity = 1.0
                             }
                         })
                     }
@@ -1492,19 +1513,41 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
                     |> deliverOnMainQueue).start(next: { [weak self] context in
                         if let self, let context = context {
                             self.mainWindow.viewController = context.rootController
+                            self.mainWindow.coveringView = nil
+                            context.rootController.view.alpha = 1.0
+                            context.rootController.view.layer.opacity = 1.0
+                            context.rootController.view.isHidden = false
+                            let windowSize = self.mainWindow.hostView.containerView.bounds.size
+                            if !windowSize.width.isZero && !windowSize.height.isZero {
+                                context.rootController.view.frame = CGRect(origin: .zero, size: windowSize)
+                                context.rootController.displayNode.frame = CGRect(origin: .zero, size: windowSize)
+                            }
                         }
                     }, completed: {
                         Queue.mainQueue().after(0.75) {
                             if let context = self.contextValue {
                                 self.mainWindow.viewController = context.rootController
+                                self.mainWindow.coveringView = nil
+                                context.rootController.view.alpha = 1.0
+                                context.rootController.view.layer.opacity = 1.0
+                                context.rootController.view.isHidden = false
+                                let windowSize = self.mainWindow.hostView.containerView.bounds.size
+                                if !windowSize.width.isZero && !windowSize.height.isZero {
+                                    context.rootController.view.frame = CGRect(origin: .zero, size: windowSize)
+                                    context.rootController.displayNode.frame = CGRect(origin: .zero, size: windowSize)
+                                }
                             }
                             authContextValue.rootController.view.endEditing(true)
                             authContextValue.rootController.dismiss()
+                            authContextValue.rootController.view.removeFromSuperview()
+                            authContextValue.rootController.displayNode.view.removeFromSuperview()
                         }
                     })
                 } else {
                     authContextValue.rootController.view.endEditing(true)
                     authContextValue.rootController.dismiss()
+                    authContextValue.rootController.view.removeFromSuperview()
+                    authContextValue.rootController.displayNode.view.removeFromSuperview()
                 }
             }
             self.authContextValue = context

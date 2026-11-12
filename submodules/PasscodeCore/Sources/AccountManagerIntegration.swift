@@ -75,7 +75,7 @@ public func setupAccountManager<Types: AccountManagerTypes>(basePath: String, is
         removeDatabaseOnError: removeDatabaseOnError,
         accessChallenge: AccountManagerAccessChallenge(
             prepare: { isFreshInstallation in
-                let _ = try PasscodeEnvironment.shared.sharedAccessGroup()
+                let _ = try? PasscodeEnvironment.shared.sharedAccessGroup()
                 PasscodeCredentialStore.shared.configureLock(directory: basePath)
                 if canReset && isFreshInstallation {
                     try resetLocalSecrets?()

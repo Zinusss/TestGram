@@ -10,7 +10,8 @@
 
 // ============================================================================
 // 1. App Group Directory Redirection
-// Prevents black screen / crash on launch when running without App Group entitlement
+// Always redirects to stable Documents/AppGroup under free Apple ID sideloading,
+// avoiding ephemeral /tmp paths from Sideloadly's spoofer or launch failures.
 // ============================================================================
 
 @implementation NSFileManager (SideloadFix)
@@ -29,7 +30,7 @@
 
 - (NSURL *)fixed_containerURLForSecurityApplicationGroupIdentifier:(NSString *)groupIdentifier {
     NSURL *origURL = [self fixed_containerURLForSecurityApplicationGroupIdentifier:groupIdentifier];
-    if (origURL != nil) {
+    if (origURL != nil && [origURL.path containsString:@"Shared/AppGroup"]) {
         return origURL;
     }
     
@@ -58,60 +59,65 @@ static OSStatus (*orig_SecItemCopyMatching)(CFDictionaryRef query, CFTypeRef *re
 static OSStatus (*orig_SecItemUpdate)(CFDictionaryRef query, CFDictionaryRef attributesToUpdate) = NULL;
 static OSStatus (*orig_SecItemDelete)(CFDictionaryRef query) = NULL;
 
-static CFDictionaryRef stripAccessGroup(CFDictionaryRef query) {
-    if (!query) return NULL;
-    if (!CFDictionaryContainsKey(query, kSecAttrAccessGroup)) {
-        return NULL;
+static CFDictionaryRef cleanKeychainDictionary(CFDictionaryRef dict, BOOL stripAccessible) {
+    if (!dict) return NULL;
+    NSMutableDictionary *mutable = [(__bridge NSDictionary *)dict mutableCopy];
+    [mutable removeObjectForKey:(__bridge id)kSecAttrAccessGroup];
+    [mutable removeObjectForKey:(__bridge id)kSecAttrAccessControl];
+    [mutable removeObjectForKey:(__bridge id)kSecAttrSynchronizable];
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wunguarded-availability"
+    if (&kSecUseDataProtectionKeychain != NULL) {
+        [mutable removeObjectForKey:(__bridge id)kSecUseDataProtectionKeychain];
     }
-    NSMutableDictionary *dict = [(__bridge NSDictionary *)query mutableCopy];
-    [dict removeObjectForKey:(__bridge id)kSecAttrAccessGroup];
-    return CFBridgingRetain(dict);
+    #pragma clang diagnostic pop
+    if (stripAccessible) {
+        [mutable removeObjectForKey:(__bridge id)kSecAttrAccessible];
+    }
+    return CFBridgingRetain(mutable);
 }
 
 OSStatus fixed_SecItemAdd(CFDictionaryRef attributes, CFTypeRef *result) {
-    CFDictionaryRef clean = stripAccessGroup(attributes);
+    CFDictionaryRef clean = cleanKeychainDictionary(attributes, NO);
     CFDictionaryRef toUse = clean ? clean : attributes;
     OSStatus (*func)(CFDictionaryRef, CFTypeRef *) = orig_SecItemAdd ? orig_SecItemAdd : (OSStatus (*)(CFDictionaryRef, CFTypeRef *))dlsym(RTLD_DEFAULT, "SecItemAdd");
     OSStatus status = func(toUse, result);
-    if ((status == errSecMissingEntitlement || status == -34018) && !clean) {
-        NSMutableDictionary *fallback = [(__bridge NSDictionary *)attributes mutableCopy];
-        [fallback removeObjectForKey:(__bridge id)kSecAttrAccessGroup];
-        [fallback removeObjectForKey:(__bridge id)kSecAttrAccessControl];
-        status = func((__bridge CFDictionaryRef)fallback, result);
+    if (status == errSecMissingEntitlement || status == -34018 || status == errSecParam) {
+        CFDictionaryRef fallback = cleanKeychainDictionary(attributes, YES);
+        status = func(fallback ? fallback : toUse, result);
+        if (fallback) CFRelease(fallback);
     }
     if (clean) CFRelease(clean);
     return status;
 }
 
 OSStatus fixed_SecItemCopyMatching(CFDictionaryRef query, CFTypeRef *result) {
-    CFDictionaryRef clean = stripAccessGroup(query);
+    CFDictionaryRef clean = cleanKeychainDictionary(query, NO);
     CFDictionaryRef toUse = clean ? clean : query;
     OSStatus (*func)(CFDictionaryRef, CFTypeRef *) = orig_SecItemCopyMatching ? orig_SecItemCopyMatching : (OSStatus (*)(CFDictionaryRef, CFTypeRef *))dlsym(RTLD_DEFAULT, "SecItemCopyMatching");
     OSStatus status = func(toUse, result);
-    if ((status == errSecMissingEntitlement || status == -34018) && !clean) {
-        NSMutableDictionary *fallback = [(__bridge NSDictionary *)query mutableCopy];
-        [fallback removeObjectForKey:(__bridge id)kSecAttrAccessGroup];
-        [fallback removeObjectForKey:(__bridge id)kSecAttrAccessControl];
-        status = func((__bridge CFDictionaryRef)fallback, result);
+    if (status == errSecMissingEntitlement || status == -34018 || status == errSecParam) {
+        CFDictionaryRef fallback = cleanKeychainDictionary(query, YES);
+        status = func(fallback ? fallback : toUse, result);
+        if (fallback) CFRelease(fallback);
     }
     if (clean) CFRelease(clean);
     return status;
 }
 
 OSStatus fixed_SecItemUpdate(CFDictionaryRef query, CFDictionaryRef attributesToUpdate) {
-    CFDictionaryRef cleanQuery = stripAccessGroup(query);
-    CFDictionaryRef cleanAttrs = stripAccessGroup(attributesToUpdate);
+    CFDictionaryRef cleanQuery = cleanKeychainDictionary(query, NO);
+    CFDictionaryRef cleanAttrs = cleanKeychainDictionary(attributesToUpdate, NO);
     CFDictionaryRef queryToUse = cleanQuery ? cleanQuery : query;
     CFDictionaryRef attrsToUse = cleanAttrs ? cleanAttrs : attributesToUpdate;
     OSStatus (*func)(CFDictionaryRef, CFDictionaryRef) = orig_SecItemUpdate ? orig_SecItemUpdate : (OSStatus (*)(CFDictionaryRef, CFDictionaryRef))dlsym(RTLD_DEFAULT, "SecItemUpdate");
     OSStatus status = func(queryToUse, attrsToUse);
-    if (status == errSecMissingEntitlement || status == -34018) {
-        NSMutableDictionary *fallbackQuery = [(__bridge NSDictionary *)query mutableCopy];
-        [fallbackQuery removeObjectForKey:(__bridge id)kSecAttrAccessGroup];
-        NSMutableDictionary *fallbackAttrs = [(__bridge NSDictionary *)attributesToUpdate mutableCopy];
-        [fallbackAttrs removeObjectForKey:(__bridge id)kSecAttrAccessGroup];
-        [fallbackAttrs removeObjectForKey:(__bridge id)kSecAttrAccessControl];
-        status = func((__bridge CFDictionaryRef)fallbackQuery, (__bridge CFDictionaryRef)fallbackAttrs);
+    if (status == errSecMissingEntitlement || status == -34018 || status == errSecParam) {
+        CFDictionaryRef fallbackQuery = cleanKeychainDictionary(query, YES);
+        CFDictionaryRef fallbackAttrs = cleanKeychainDictionary(attributesToUpdate, YES);
+        status = func(fallbackQuery ? fallbackQuery : queryToUse, fallbackAttrs ? fallbackAttrs : attrsToUse);
+        if (fallbackQuery) CFRelease(fallbackQuery);
+        if (fallbackAttrs) CFRelease(fallbackAttrs);
     }
     if (cleanQuery) CFRelease(cleanQuery);
     if (cleanAttrs) CFRelease(cleanAttrs);
@@ -119,18 +125,27 @@ OSStatus fixed_SecItemUpdate(CFDictionaryRef query, CFDictionaryRef attributesTo
 }
 
 OSStatus fixed_SecItemDelete(CFDictionaryRef query) {
-    CFDictionaryRef clean = stripAccessGroup(query);
+    CFDictionaryRef clean = cleanKeychainDictionary(query, NO);
     CFDictionaryRef toUse = clean ? clean : query;
     OSStatus (*func)(CFDictionaryRef) = orig_SecItemDelete ? orig_SecItemDelete : (OSStatus (*)(CFDictionaryRef))dlsym(RTLD_DEFAULT, "SecItemDelete");
     OSStatus status = func(toUse);
-    if ((status == errSecMissingEntitlement || status == -34018) && !clean) {
-        NSMutableDictionary *fallback = [(__bridge NSDictionary *)query mutableCopy];
-        [fallback removeObjectForKey:(__bridge id)kSecAttrAccessGroup];
-        status = func((__bridge CFDictionaryRef)fallback);
+    if (status == errSecMissingEntitlement || status == -34018 || status == errSecParam) {
+        CFDictionaryRef fallback = cleanKeychainDictionary(query, YES);
+        status = func(fallback ? fallback : toUse);
+        if (fallback) CFRelease(fallback);
     }
     if (clean) CFRelease(clean);
     return status;
 }
+
+// Interpose table in case DYLD_INSERT_LIBRARIES / dynamic linker is active
+__attribute__((used)) static struct { const void *replacement; const void *replacee; } _interpose[]
+__attribute__((section("__DATA,__interpose"))) = {
+    { (const void *)fixed_SecItemAdd, (const void *)SecItemAdd },
+    { (const void *)fixed_SecItemCopyMatching, (const void *)SecItemCopyMatching },
+    { (const void *)fixed_SecItemUpdate, (const void *)SecItemUpdate },
+    { (const void *)fixed_SecItemDelete, (const void *)SecItemDelete }
+};
 
 // ----------------------------------------------------------------------------
 // 3. Fishhook Dynamic Rebinding

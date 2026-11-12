@@ -118,7 +118,10 @@ final class PasscodeKeychain: PasscodeStorage {
             kSecAttrSynchronizable as String: false
         ]
         #if !os(macOS)
-        query[kSecAttrAccessGroup as String] = try account.hasPrefix("biometric.") ? self.environment.privateAccessGroup() : self.environment.sharedAccessGroup()
+        let group = try? (account.hasPrefix("biometric.") ? self.environment.privateAccessGroup() : self.environment.sharedAccessGroup())
+        if let group = group, !group.isEmpty && !group.hasPrefix("group.") && group != "sideload" {
+            query[kSecAttrAccessGroup as String] = group
+        }
         #endif
         return query
     }

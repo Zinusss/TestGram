@@ -241,7 +241,7 @@ API_AVAILABLE(ios(10))
 + (NSString * _Nullable)keychainAccessGroupForBaseAppBundleId:(NSString * _Nonnull)baseAppBundleId {
     NSString *bundleSeedId = [self bundleSeedId];
     if (bundleSeedId.length == 0 || [bundleSeedId isEqualToString:@"sideload"]) {
-        return baseAppBundleId;
+        return nil;
     }
     return [bundleSeedId stringByAppendingFormat:@".%@", baseAppBundleId];
 }
