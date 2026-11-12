@@ -452,7 +452,7 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         self.qrLoginButton.displaysAsynchronously = false
         let isUkrainian = strings.primaryComponent.languageCode.lowercased().hasPrefix("uk")
         let qrButtonTitle = isUkrainian ? "Швидкий вхід за QR-кодом" : "Quick Log In using QR Code"
-        self.qrLoginButton.setTitle(NSAttributedString(string: qrButtonTitle, font: Font.medium(17.0), textColor: theme.list.itemAccentColor), for: [])
+        self.qrLoginButton.setTitle(qrButtonTitle, with: Font.medium(17.0), with: theme.list.itemAccentColor, for: .normal)
         self.qrLoginButton.accessibilityTraits = [.button]
 
         super.init()
@@ -674,7 +674,7 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         let titleSize = self.titleNode.measure(CGSize(width: maximumWidth, height: CGFloat.greatestFiniteMagnitude))
         
         let noticeInset: CGFloat = self.account == nil ? 32.0 : 0.0
-        let noticeSize = self.noticeNode.updateLayout(CGSize(width: min(320.0, maximumWidth - 28.0), height: CGFloat.greatestFiniteMagnitude))
+        let noticeSize = self.noticeNode.updateLayout(CGSize(width: min(274.0 + noticeInset, maximumWidth - 28.0), height: CGFloat.greatestFiniteMagnitude))
         let proceedHeight = self.proceedNode.updateLayout(width: bottomMaximumWidth - inset * 2.0, transition: transition)
         let proceedSize = CGSize(width: bottomMaximumWidth - inset * 2.0, height: proceedHeight)
         
