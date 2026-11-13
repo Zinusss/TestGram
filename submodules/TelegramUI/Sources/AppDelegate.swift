@@ -579,11 +579,12 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
         try? FileManager.default.createDirectory(at: persistentGroupUrl, withIntermediateDirectories: true, attributes: nil)
         
         var isRealAppGroup = false
-        var appGroupUrl = persistentGroupUrl
+        let appGroupUrl: URL
         if let origGroupUrl = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: appGroupName), origGroupUrl.path.contains("Shared/AppGroup") {
             isRealAppGroup = true
             appGroupUrl = origGroupUrl
         } else {
+            appGroupUrl = persistentGroupUrl
             NSLog("[Ghostgram] Sideload detected: using persistent local directory: \(persistentGroupUrl.path)")
         }
         
@@ -591,7 +592,6 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
         try? PasscodeEnvironment.shared.configure(PasscodeConfiguration(appGroupIdentifier: isRealAppGroup ? appGroupName : "", processRole: .mainApp, biometricKeychainService: walletBiometricKeychainService), privateAccessGroup: {
             return keychainGroup
         })
-        var maybeAppGroupUrl: URL? = appGroupUrl
         
         let buildConfig = BuildConfig(baseAppBundleId: baseAppBundleId)
         self.buildConfig = buildConfig
@@ -714,15 +714,6 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
             networkEngineFactory: RustNetworkEngineFactory()
         )
         
-        let appGroupUrl: URL
-        if let maybeUrl = maybeAppGroupUrl {
-            appGroupUrl = maybeUrl
-        } else {
-            let docsUrl = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-            let fallbackGroupUrl = docsUrl.appendingPathComponent("AppGroup")
-            try? FileManager.default.createDirectory(at: fallbackGroupUrl, withIntermediateDirectories: true, attributes: nil)
-            appGroupUrl = fallbackGroupUrl
-        }
         // GHOST: Ghostgram core and feature modules, before the AccountManager and the accounts (FOUNDATION_SPEC §2)
         ggApplicationDidLaunch(appGroupPath: appGroupUrl.path)
         
@@ -1290,7 +1281,7 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
             }
         }
         self.sharedContextPromise.set(sharedContextSignal
-        |> mapToSignal { sharedApplicationContext, loggingSettings -> Signal<SharedApplicationContext, NoError> in
+        |> mapToSignal { (sharedApplicationContext: SharedApplicationContext, loggingSettings: LoggingSettings) -> Signal<SharedApplicationContext, NoError> in
             Logger.shared.logToFile = loggingSettings.logToFile
             Logger.shared.logToConsole = loggingSettings.logToConsole
             Logger.shared.redactSensitiveData = loggingSettings.redactSensitiveData
