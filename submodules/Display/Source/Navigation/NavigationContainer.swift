@@ -34,6 +34,7 @@ public final class NavigationContainer: ASDisplayNode, ASGestureRecognizerDelega
             self.disposable.set((value.value.ready.get()
             |> filter { $0 }
             |> take(1)
+            |> timeout(0.3, queue: Queue.mainQueue(), alternate: .single(true))
             |> deliverOnMainQueue).start(next: { [weak self] _ in
                 if localIsReady == nil {
                     localIsReady = true

@@ -1493,16 +1493,32 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
             
             if let authContextValue = self.authContextValue {
                 authContextValue.account.shouldBeServiceTaskMaster.set(.single(.never))
-                if authContextValue.authorizationCompleted {
-                    let accountId = authContextValue.account.id
-                    let _ = (self.context.get()
-                    |> filter { context in
-                        return context?.context.account.id == accountId
+                let accountId = authContextValue.account.id
+                let _ = (self.context.get()
+                |> filter { context in
+                    if let context = context {
+                        return context.context.account.id == accountId || true
                     }
-                    |> take(1)
-                    |> timeout(4.0, queue: .mainQueue(), alternate: .complete())
-                    |> deliverOnMainQueue).start(next: { [weak self] context in
-                        if let self, let context = context {
+                    return false
+                }
+                |> take(1)
+                |> timeout(2.0, queue: .mainQueue(), alternate: self.context.get() |> filter { $0 != nil } |> take(1))
+                |> deliverOnMainQueue).start(next: { [weak self] context in
+                    if let self, let context = context {
+                        self.mainWindow.viewController = context.rootController
+                        self.mainWindow.coveringView = nil
+                        context.rootController.view.alpha = 1.0
+                        context.rootController.view.layer.opacity = 1.0
+                        context.rootController.view.isHidden = false
+                        let windowSize = self.mainWindow.hostView.containerView.bounds.size
+                        if !windowSize.width.isZero && !windowSize.height.isZero {
+                            context.rootController.view.frame = CGRect(origin: .zero, size: windowSize)
+                            context.rootController.displayNode.frame = CGRect(origin: .zero, size: windowSize)
+                        }
+                    }
+                }, completed: {
+                    Queue.mainQueue().after(0.5) {
+                        if let context = self.contextValue {
                             self.mainWindow.viewController = context.rootController
                             self.mainWindow.coveringView = nil
                             context.rootController.view.alpha = 1.0
@@ -1514,32 +1530,12 @@ private func extractAccountManagerState(records: AccountRecordsView<TelegramAcco
                                 context.rootController.displayNode.frame = CGRect(origin: .zero, size: windowSize)
                             }
                         }
-                    }, completed: {
-                        Queue.mainQueue().after(0.75) {
-                            if let context = self.contextValue {
-                                self.mainWindow.viewController = context.rootController
-                                self.mainWindow.coveringView = nil
-                                context.rootController.view.alpha = 1.0
-                                context.rootController.view.layer.opacity = 1.0
-                                context.rootController.view.isHidden = false
-                                let windowSize = self.mainWindow.hostView.containerView.bounds.size
-                                if !windowSize.width.isZero && !windowSize.height.isZero {
-                                    context.rootController.view.frame = CGRect(origin: .zero, size: windowSize)
-                                    context.rootController.displayNode.frame = CGRect(origin: .zero, size: windowSize)
-                                }
-                            }
-                            authContextValue.rootController.view.endEditing(true)
-                            authContextValue.rootController.dismiss()
-                            authContextValue.rootController.view.removeFromSuperview()
-                            authContextValue.rootController.displayNode.view.removeFromSuperview()
-                        }
-                    })
-                } else {
-                    authContextValue.rootController.view.endEditing(true)
-                    authContextValue.rootController.dismiss()
-                    authContextValue.rootController.view.removeFromSuperview()
-                    authContextValue.rootController.displayNode.view.removeFromSuperview()
-                }
+                        authContextValue.rootController.view.endEditing(true)
+                        authContextValue.rootController.dismiss()
+                        authContextValue.rootController.view.removeFromSuperview()
+                        authContextValue.rootController.displayNode.view.removeFromSuperview()
+                    }
+                })
             }
             self.authContextValue = context
             if let context = context {

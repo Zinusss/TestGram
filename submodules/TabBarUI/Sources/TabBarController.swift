@@ -510,6 +510,7 @@ open class TabBarControllerImpl: ViewController, TabBarController {
         |> take(1)
         
         let allReady = signals
+        |> timeout(0.3, queue: Queue.mainQueue(), alternate: .single(true))
         |> deliverOnMainQueue
         |> mapToSignal { _ -> Signal<Bool, NoError> in
             // wait for tab bar items to be applied

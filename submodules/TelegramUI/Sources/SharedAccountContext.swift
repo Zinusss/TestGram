@@ -773,11 +773,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
                             hadUpdates = true
                         }
                     } else {
-                        let _ = accountManager.transaction({ transaction in
-                            transaction.updateRecord(accountRecord.0, { _ in
-                                return nil
-                            })
-                        }).start()
+                        Logger.shared.log("SharedAccountContextImpl", "account \(accountRecord.0) could not be loaded as authorized, keeping record to preserve session")
                     }
                 }
                 var removedIds: [AccountRecordId] = []
