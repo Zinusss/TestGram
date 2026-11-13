@@ -10,7 +10,7 @@ private let outerCircleDiameter = innerCircleDiameter + 50.0
 private let outerCircleMinScale = innerCircleDiameter / outerCircleDiameter
 private let innerCircleImage = generateFilledCircleImage(diameter: innerCircleDiameter, color: UIColor(rgb: 0x0088ff))
 private let outerCircleImage = generateFilledCircleImage(diameter: outerCircleDiameter, color: UIColor(rgb: 0x0088ff, alpha: 0.2))
-private let micIcon = generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Text/IconMicrophone"), color: .white)!
+private let micIcon = generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Text/IconMicrophone"), color: .white) ?? UIImage()
 
 private final class ChatTextInputAudioRecordingOverlayDisplayLinkTarget: NSObject {
     private let f: () -> Void

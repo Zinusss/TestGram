@@ -563,10 +563,13 @@ public func assertNotOnMainThread(_ file: String = #file, line: Int = #line) {
 }
 
 public extension UIImage {
-    func precomposed() -> UIImage {        
+    func precomposed() -> UIImage {
+        if self.size.width.isZero || self.size.height.isZero {
+            return self
+        }
         UIGraphicsBeginImageContextWithOptions(self.size, false, self.scale)
         self.draw(at: CGPoint())
-        let result = UIGraphicsGetImageFromCurrentImageContext()!
+        let result = UIGraphicsGetImageFromCurrentImageContext() ?? self
         UIGraphicsEndImageContext()
         if self.capInsets != UIEdgeInsets() {
             return result.resizableImage(withCapInsets: self.capInsets, resizingMode: self.resizingMode)

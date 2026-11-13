@@ -305,6 +305,9 @@ public func generateTintedImage(image: UIImage?, color: UIColor, backgroundColor
     }
     
     let imageSize = image.size
+    if imageSize.width.isZero || imageSize.height.isZero {
+        return image
+    }
 
     UIGraphicsBeginImageContextWithOptions(imageSize, backgroundColor != nil, image.scale)
     if let context = UIGraphicsGetCurrentContext() {
@@ -318,13 +321,17 @@ public func generateTintedImage(image: UIImage?, color: UIColor, backgroundColor
         context.translateBy(x: imageRect.midX, y: imageRect.midY)
         context.scaleBy(x: flipHorizontally ? -1.0 : 1.0, y: -1.0)
         context.translateBy(x: -imageRect.midX, y: -imageRect.midY)
-        context.clip(to: imageRect, mask: image.cgImage!)
-        context.setFillColor(color.cgColor)
-        context.fill(imageRect)
+        if let cgImage = image.cgImage {
+            context.clip(to: imageRect, mask: cgImage)
+            context.setFillColor(color.cgColor)
+            context.fill(imageRect)
+        } else {
+            image.draw(in: imageRect)
+        }
         context.restoreGState()
     }
     
-    let tintedImage = UIGraphicsGetImageFromCurrentImageContext()!
+    let tintedImage = UIGraphicsGetImageFromCurrentImageContext() ?? image
     UIGraphicsEndImageContext()
     
     return tintedImage

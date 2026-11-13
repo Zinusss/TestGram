@@ -26,22 +26,22 @@ public enum ChatMessageReplyInfoType {
 }
 
 private let quoteIcon: UIImage = {
-    return UIImage(bundleImageName: "Chat/Message/ReplyQuoteIcon")!.precomposed().withRenderingMode(.alwaysTemplate)
+    return (UIImage(bundleImageName: "Chat/Message/ReplyQuoteIcon") ?? UIImage()).precomposed().withRenderingMode(.alwaysTemplate)
 }()
 
 private let channelIcon: UIImage = {
-    let sourceImage = UIImage(bundleImageName: "Chat/Input/Accessory Panels/PanelTextChannelIcon")!
-    return generateImage(CGSize(width: sourceImage.size.width + 4.0, height: sourceImage.size.height + 4.0), rotatedContext: { size, context in
+    let sourceImage = UIImage(bundleImageName: "Chat/Input/Accessory Panels/PanelTextChannelIcon") ?? UIImage()
+    return (generateImage(CGSize(width: max(1.0, sourceImage.size.width + 4.0), height: max(1.0, sourceImage.size.height + 4.0)), rotatedContext: { size, context in
         context.clear(CGRect(origin: CGPoint(), size: size))
         UIGraphicsPushContext(context)
         sourceImage.draw(at: CGPoint(x: 2.0, y: 1.0 + UIScreenPixel))
         UIGraphicsPopContext()
-    })!.precomposed().withRenderingMode(.alwaysTemplate)
+    }) ?? sourceImage).precomposed().withRenderingMode(.alwaysTemplate)
 }()
 
 private func generateGroupIcon() -> UIImage {
-    let sourceImage = UIImage(bundleImageName: "Chat/Input/Accessory Panels/PanelTextGroupIcon")!
-    return generateImage(CGSize(width: sourceImage.size.width, height: sourceImage.size.height + 4.0), rotatedContext: { size, context in
+    let sourceImage = UIImage(bundleImageName: "Chat/Input/Accessory Panels/PanelTextGroupIcon") ?? UIImage()
+    return (generateImage(CGSize(width: max(1.0, sourceImage.size.width), height: max(1.0, sourceImage.size.height + 4.0)), rotatedContext: { size, context in
         context.clear(CGRect(origin: CGPoint(), size: size))
         UIGraphicsPushContext(context)
         sourceImage.draw(at: CGPoint(x: 0.0, y: 1.0 - UIScreenPixel))
@@ -49,7 +49,7 @@ private func generateGroupIcon() -> UIImage {
         
         //context.setFillColor(UIColor.white.cgColor)
         //context.fill(CGRect(origin: CGPoint(), size: size))
-    })!.precomposed().withRenderingMode(.alwaysTemplate)
+    }) ?? sourceImage).precomposed().withRenderingMode(.alwaysTemplate)
 }
 
 private let groupIcon: UIImage = {

@@ -392,7 +392,7 @@ private final class ChatMessageDateContentNode: ASDisplayNode {
 }
 
 private final class ChatMessagePeerContentNode: ASDisplayNode {
-    private static let arrowImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/HeaderArrow"), color: .white)!.withRenderingMode(.alwaysTemplate)
+    private static let arrowImage = (generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/HeaderArrow"), color: .white) ?? UIImage()).withRenderingMode(.alwaysTemplate)
     
     private let context: AccountContext
     private var presentationData: ChatPresentationData

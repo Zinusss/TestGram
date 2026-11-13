@@ -1503,15 +1503,15 @@ public final class ChatInputTextView: ChatInputTextViewImpl, UITextViewDelegate,
 }
 
 private let quoteIcon: UIImage = {
-    return UIImage(bundleImageName: "Chat/Message/ReplyQuoteIcon")!.precomposed().withRenderingMode(.alwaysTemplate)
+    return (UIImage(bundleImageName: "Chat/Message/ReplyQuoteIcon") ?? UIImage()).precomposed().withRenderingMode(.alwaysTemplate)
 }()
 
 private let quoteCollapseImage: UIImage = {
-    return UIImage(bundleImageName: "Media Gallery/Minimize")!.precomposed().withRenderingMode(.alwaysTemplate)
+    return (UIImage(bundleImageName: "Media Gallery/Minimize") ?? UIImage()).precomposed().withRenderingMode(.alwaysTemplate)
 }()
 
 private let quoteExpandImage: UIImage = {
-    return UIImage(bundleImageName: "Media Gallery/Fullscreen")!.precomposed().withRenderingMode(.alwaysTemplate)
+    return (UIImage(bundleImageName: "Media Gallery/Fullscreen") ?? UIImage()).precomposed().withRenderingMode(.alwaysTemplate)
 }()
 
 private final class QuoteBackgroundView: UIView {

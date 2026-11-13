@@ -111,7 +111,7 @@ private final class GGHeaderItemNode: ListViewItemNode {
                 let previousItem = strongSelf.item
                 strongSelf.item = item
 
-                if previousItem?.theme !== item.theme {
+                if previousItem == nil || previousItem?.theme !== item.theme {
                     strongSelf.markNode.image = ggSettingsHeaderMark(theme: item.theme)
                 }
                 let _ = titleApply()

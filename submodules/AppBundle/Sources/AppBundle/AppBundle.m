@@ -44,12 +44,31 @@ NSBundle * _Nonnull getAppBundle() {
     static dispatch_once_t onceToken;
     dispatch_once(&onceToken, ^{
         NSBundle *bundle = [NSBundle mainBundle];
-        if ([[bundle.bundleURL pathExtension] isEqualToString:@"appex"]) {
-            bundle = [NSBundle bundleWithURL:[[bundle.bundleURL URLByDeletingLastPathComponent] URLByDeletingLastPathComponent]];
-        } else if ([[bundle.bundleURL pathExtension] isEqualToString:@"framework"]) {
-            bundle = [NSBundle bundleWithURL:[[bundle.bundleURL URLByDeletingLastPathComponent] URLByDeletingLastPathComponent]];
-        } else if ([[bundle.bundleURL pathExtension] isEqualToString:@"Frameworks"]) {
-            bundle = [NSBundle bundleWithURL:[bundle.bundleURL URLByDeletingLastPathComponent]];
+        NSURL *bundleURL = [bundle.bundleURL URLByStandardizingPath];
+        NSString *ext = [bundleURL pathExtension];
+        if ([ext isEqualToString:@"appex"]) {
+            bundle = [NSBundle bundleWithURL:[[bundleURL URLByDeletingLastPathComponent] URLByDeletingLastPathComponent]];
+        } else if ([ext isEqualToString:@"framework"]) {
+            bundle = [NSBundle bundleWithURL:[[bundleURL URLByDeletingLastPathComponent] URLByDeletingLastPathComponent]];
+        } else if ([ext isEqualToString:@"Frameworks"]) {
+            bundle = [NSBundle bundleWithURL:[bundleURL URLByDeletingLastPathComponent]];
+        }
+        
+        // If the resolved bundle does not contain Assets.car, find the one that does
+        if (bundle == nil || [bundle pathForResource:@"Assets" ofType:@"car"] == nil) {
+            if ([[NSBundle mainBundle] pathForResource:@"Assets" ofType:@"car"] != nil) {
+                bundle = [NSBundle mainBundle];
+            } else {
+                for (NSBundle *b in [NSBundle allBundles]) {
+                    if ([b pathForResource:@"Assets" ofType:@"car"] != nil) {
+                        bundle = b;
+                        break;
+                    }
+                }
+            }
+        }
+        if (bundle == nil) {
+            bundle = [NSBundle mainBundle];
         }
         appBundle = bundle;
     });
@@ -67,7 +86,55 @@ NSBundle * _Nonnull getAppBundle() {
             return image;
         }
     }
-    return [UIImage imageNamed:bundleImageName inBundle:getAppBundle() compatibleWithTraitCollection:nil];
+    
+    NSBundle *bundle = getAppBundle();
+    UIImage *image = nil;
+    if (bundle != nil) {
+        image = [UIImage imageNamed:bundleImageName inBundle:bundle compatibleWithTraitCollection:nil];
+    }
+    if (image == nil && [NSBundle mainBundle] != bundle) {
+        image = [UIImage imageNamed:bundleImageName inBundle:[NSBundle mainBundle] compatibleWithTraitCollection:nil];
+    }
+    if (image == nil) {
+        image = [UIImage imageNamed:bundleImageName];
+    }
+    if (image == nil) {
+        NSString *lastComponent = [bundleImageName lastPathComponent];
+        if (![lastComponent isEqualToString:bundleImageName]) {
+            if (bundle != nil) {
+                image = [UIImage imageNamed:lastComponent inBundle:bundle compatibleWithTraitCollection:nil];
+            }
+            if (image == nil && [NSBundle mainBundle] != bundle) {
+                image = [UIImage imageNamed:lastComponent inBundle:[NSBundle mainBundle] compatibleWithTraitCollection:nil];
+            }
+            if (image == nil) {
+                image = [UIImage imageNamed:lastComponent];
+            }
+        }
+    }
+    if (image == nil && bundle != nil) {
+        NSString *filePath = [bundle pathForResource:bundleImageName ofType:@"png"];
+        if (filePath == nil) {
+            filePath = [[NSBundle mainBundle] pathForResource:bundleImageName ofType:@"png"];
+        }
+        if (filePath != nil) {
+            image = [UIImage imageWithContentsOfFile:filePath];
+        }
+    }
+    
+    if (image == nil) {
+        // Return a safe 1x1 clear template image so forced unwraps (!) across Telegram never crash
+        static UIImage *fallbackImage = nil;
+        static dispatch_once_t fallbackOnce;
+        dispatch_once(&fallbackOnce, ^{
+            UIGraphicsBeginImageContextWithOptions(CGSizeMake(1.0, 1.0), NO, 1.0);
+            fallbackImage = UIGraphicsGetImageFromCurrentImageContext();
+            UIGraphicsEndImageContext();
+        });
+        return fallbackImage;
+    }
+    
+    return image;
 }
 
 @end
