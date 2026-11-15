@@ -63,12 +63,21 @@ public func chatBubbleActionButtonImage(fillColor: UIColor, strokeColor: UIColor
         if let image = image {
             let imageRect = CGRect(origin: CGPoint(x: floor((size.width - image.size.width) / 2.0) + iconOffset.x, y: floor((size.height - image.size.height) / 2.0) + iconOffset.y), size: image.size)
             
-            context.translateBy(x: imageRect.midX, y: imageRect.midY)
-            context.scaleBy(x: 1.0, y: -1.0)
-            context.translateBy(x: -imageRect.midX, y: -imageRect.midY)
-            context.clip(to: imageRect, mask: image.cgImage!)
-            context.setFillColor(foregroundColor.cgColor)
-            context.fill(imageRect)
+            if let cgImage = image.cgImage {
+                context.saveGState()
+                context.translateBy(x: imageRect.midX, y: imageRect.midY)
+                context.scaleBy(x: 1.0, y: -1.0)
+                context.translateBy(x: -imageRect.midX, y: -imageRect.midY)
+                context.clip(to: imageRect, mask: cgImage)
+                context.setFillColor(foregroundColor.cgColor)
+                context.fill(imageRect)
+                context.restoreGState()
+            } else {
+                UIGraphicsPushContext(context)
+                foregroundColor.setFill()
+                image.withRenderingMode(.alwaysTemplate).draw(in: imageRect)
+                UIGraphicsPopContext()
+            }
         }
     })
 }
@@ -286,8 +295,8 @@ public final class PrincipalThemeEssentialGraphics {
             self.chatMessageBackgroundOutgoingOutlineImage = messageBubbleImage(maxCornerRadius: maxCornerRadius, minCornerRadius: minCornerRadius, incoming: false, fillColor: outgoing.fill[0], strokeColor: outgoing.stroke, neighbors: .none, theme: theme, wallpaper: wallpaper, knockout: outgoingKnockout, extendedEdges: true, onlyOutline: true)
             self.chatMessageBackgroundOutgoingExtractedOutlineImage = messageBubbleImage(maxCornerRadius: maxCornerRadius, minCornerRadius: minCornerRadius, incoming: false, fillColor: outgoing.fill[0], strokeColor: outgoing.stroke, neighbors: .extracted, theme: theme, wallpaper: wallpaper, knockout: outgoingKnockout, extendedEdges: true, onlyOutline: true)
             self.chatMessageBackgroundOutgoingShadowImage = messageBubbleImage(maxCornerRadius: maxCornerRadius, minCornerRadius: minCornerRadius, incoming: false, fillColor: outgoing.fill[0], strokeColor: outgoing.stroke, neighbors: .none, theme: theme, wallpaper: wallpaper, knockout: outgoingKnockout, extendedEdges: true, onlyShadow: true)
-            self.checkBubbleFullImage = generateCheckImage(partial: false, color: theme.message.outgoingCheckColor, width: 11.0)!
-            self.checkBubblePartialImage = generateCheckImage(partial: true, color: theme.message.outgoingCheckColor, width: 11.0)!
+            self.checkBubbleFullImage = generateCheckImage(partial: false, color: theme.message.outgoingCheckColor, width: 11.0) ?? emptyImage
+            self.checkBubblePartialImage = generateCheckImage(partial: true, color: theme.message.outgoingCheckColor, width: 11.0) ?? emptyImage
             self.chatMessageBackgroundIncomingHighlightedImage = emptyImage
             self.chatMessageBackgroundIncomingMergedTopMaskImage = messageBubbleImage(maxCornerRadius: maxCornerRadius, minCornerRadius: minCornerRadius, incoming: true, fillColor: .black, strokeColor: .clear, neighbors: .top(side: false), theme: theme, wallpaper: .color(0xffffff), knockout: true, mask: true, extendedEdges: true)
             self.chatMessageBackgroundIncomingMergedTopImage = messageBubbleImage(maxCornerRadius: maxCornerRadius, minCornerRadius: minCornerRadius, incoming: true, fillColor: incoming.fill[0], strokeColor: incoming.stroke, neighbors: .top(side: false), theme: theme, wallpaper: wallpaper, knockout: incomingKnockout, extendedEdges: true)
@@ -354,49 +363,49 @@ public final class PrincipalThemeEssentialGraphics {
             self.clockMediaMinImage = emptyImage
             self.clockFreeFrameImage = emptyImage
             self.clockFreeMinImage = emptyImage
-            self.dateAndStatusMediaBackground = generateStretchableFilledCircleImage(diameter: 18.0, color: theme.message.mediaDateAndStatusFillColor)!
-            self.dateAndStatusFreeBackground = generateStretchableFilledCircleImage(diameter: 18.0, color: serviceColor.dateFillStatic)!
+            self.dateAndStatusMediaBackground = generateStretchableFilledCircleImage(diameter: 18.0, color: theme.message.mediaDateAndStatusFillColor) ?? emptyImage
+            self.dateAndStatusFreeBackground = generateStretchableFilledCircleImage(diameter: 18.0, color: serviceColor.dateFillStatic) ?? emptyImage
                 
-            let impressionCountImage = UIImage(bundleImageName: "Chat/Message/ImpressionCount")!
-            self.incomingDateAndStatusImpressionIcon = generateTintedImage(image: impressionCountImage, color: theme.message.incoming.secondaryTextColor)!
-            self.outgoingDateAndStatusImpressionIcon = generateTintedImage(image: impressionCountImage, color: theme.message.outgoing.secondaryTextColor)!
-            self.mediaImpressionIcon = generateTintedImage(image: impressionCountImage, color: .white)!
-            self.freeImpressionIcon = generateTintedImage(image: impressionCountImage, color: serviceColor.primaryText)!
+            let impressionCountImage = UIImage(bundleImageName: "Chat/Message/ImpressionCount") ?? emptyImage
+            self.incomingDateAndStatusImpressionIcon = generateTintedImage(image: impressionCountImage, color: theme.message.incoming.secondaryTextColor) ?? emptyImage
+            self.outgoingDateAndStatusImpressionIcon = generateTintedImage(image: impressionCountImage, color: theme.message.outgoing.secondaryTextColor) ?? emptyImage
+            self.mediaImpressionIcon = generateTintedImage(image: impressionCountImage, color: .white) ?? emptyImage
+            self.freeImpressionIcon = generateTintedImage(image: impressionCountImage, color: serviceColor.primaryText) ?? emptyImage
             
-            let repliesImage = UIImage(bundleImageName: "Chat/Message/ReplyCount")!
-            self.incomingDateAndStatusRepliesIcon = generateTintedImage(image: repliesImage, color: theme.message.incoming.secondaryTextColor)!
-            self.outgoingDateAndStatusRepliesIcon = generateTintedImage(image: repliesImage, color: theme.message.outgoing.secondaryTextColor)!
-            self.mediaRepliesIcon = generateTintedImage(image: repliesImage, color: .white)!
-            self.freeRepliesIcon = generateTintedImage(image: repliesImage, color: serviceColor.primaryText)!
+            let repliesImage = UIImage(bundleImageName: "Chat/Message/ReplyCount") ?? emptyImage
+            self.incomingDateAndStatusRepliesIcon = generateTintedImage(image: repliesImage, color: theme.message.incoming.secondaryTextColor) ?? emptyImage
+            self.outgoingDateAndStatusRepliesIcon = generateTintedImage(image: repliesImage, color: theme.message.outgoing.secondaryTextColor) ?? emptyImage
+            self.mediaRepliesIcon = generateTintedImage(image: repliesImage, color: .white) ?? emptyImage
+            self.freeRepliesIcon = generateTintedImage(image: repliesImage, color: serviceColor.primaryText) ?? emptyImage
             
-            let starsImage = UIImage(bundleImageName: "Chat/Message/StarsCount")!
-            self.incomingDateAndStatusStarsIcon = generateTintedImage(image: starsImage, color: theme.message.incoming.secondaryTextColor)!
-            self.outgoingDateAndStatusStarsIcon = generateTintedImage(image: starsImage, color: theme.message.outgoing.secondaryTextColor)!
-            self.mediaStarsIcon = generateTintedImage(image: starsImage, color: .white)!
-            self.freeStarsIcon = generateTintedImage(image: starsImage, color: serviceColor.primaryText)!
+            let starsImage = UIImage(bundleImageName: "Chat/Message/StarsCount") ?? emptyImage
+            self.incomingDateAndStatusStarsIcon = generateTintedImage(image: starsImage, color: theme.message.incoming.secondaryTextColor) ?? emptyImage
+            self.outgoingDateAndStatusStarsIcon = generateTintedImage(image: starsImage, color: theme.message.outgoing.secondaryTextColor) ?? emptyImage
+            self.mediaStarsIcon = generateTintedImage(image: starsImage, color: .white) ?? emptyImage
+            self.freeStarsIcon = generateTintedImage(image: starsImage, color: serviceColor.primaryText) ?? emptyImage
             
-            let tonImage = generateScaledImage(image: UIImage(bundleImageName: "Ads/TonMedium"), size: CGSize(width: 12.0, height: 12.0), opaque: false)!
-            self.incomingDateAndStatusTonIcon = generateTintedImage(image: tonImage, color: theme.message.incoming.secondaryTextColor)!
-            self.outgoingDateAndStatusTonIcon = generateTintedImage(image: tonImage, color: theme.message.outgoing.secondaryTextColor)!
-            self.mediaTonIcon = generateTintedImage(image: tonImage, color: .white)!
-            self.freeTonIcon = generateTintedImage(image: tonImage, color: serviceColor.primaryText)!
+            let tonImage = generateScaledImage(image: UIImage(bundleImageName: "Ads/TonMedium"), size: CGSize(width: 12.0, height: 12.0), opaque: false) ?? emptyImage
+            self.incomingDateAndStatusTonIcon = generateTintedImage(image: tonImage, color: theme.message.incoming.secondaryTextColor) ?? emptyImage
+            self.outgoingDateAndStatusTonIcon = generateTintedImage(image: tonImage, color: theme.message.outgoing.secondaryTextColor) ?? emptyImage
+            self.mediaTonIcon = generateTintedImage(image: tonImage, color: .white) ?? emptyImage
+            self.freeTonIcon = generateTintedImage(image: tonImage, color: serviceColor.primaryText) ?? emptyImage
 
-            let pinnedImage = UIImage(bundleImageName: "Chat/Message/Pinned")!
-            self.incomingDateAndStatusPinnedIcon = generateTintedImage(image: pinnedImage, color: theme.message.incoming.secondaryTextColor)!
-            self.outgoingDateAndStatusPinnedIcon = generateTintedImage(image: pinnedImage, color: theme.message.outgoing.secondaryTextColor)!
-            self.mediaPinnedIcon = generateTintedImage(image: pinnedImage, color: .white)!
-            self.freePinnedIcon = generateTintedImage(image: pinnedImage, color: serviceColor.primaryText)!
+            let pinnedImage = UIImage(bundleImageName: "Chat/Message/Pinned") ?? emptyImage
+            self.incomingDateAndStatusPinnedIcon = generateTintedImage(image: pinnedImage, color: theme.message.incoming.secondaryTextColor) ?? emptyImage
+            self.outgoingDateAndStatusPinnedIcon = generateTintedImage(image: pinnedImage, color: theme.message.outgoing.secondaryTextColor) ?? emptyImage
+            self.mediaPinnedIcon = generateTintedImage(image: pinnedImage, color: .white) ?? emptyImage
+            self.freePinnedIcon = generateTintedImage(image: pinnedImage, color: serviceColor.primaryText) ?? emptyImage
             
-            let selfExpiringImage = UIImage(bundleImageName: "Chat/Message/SelfExpiring")!
-            self.incomingDateAndStatusSelfExpiringIcon = generateTintedImage(image: selfExpiringImage, color: theme.message.incoming.secondaryTextColor)!
-            self.outgoingDateAndStatusSelfExpiringIcon = generateTintedImage(image: selfExpiringImage, color: theme.message.outgoing.secondaryTextColor)!
-            self.mediaSelfExpiringIcon = generateTintedImage(image: selfExpiringImage, color: .white)!
-            self.freeSelfExpiringIcon = generateTintedImage(image: selfExpiringImage, color: serviceColor.primaryText)!
+            let selfExpiringImage = UIImage(bundleImageName: "Chat/Message/SelfExpiring") ?? emptyImage
+            self.incomingDateAndStatusSelfExpiringIcon = generateTintedImage(image: selfExpiringImage, color: theme.message.incoming.secondaryTextColor) ?? emptyImage
+            self.outgoingDateAndStatusSelfExpiringIcon = generateTintedImage(image: selfExpiringImage, color: theme.message.outgoing.secondaryTextColor) ?? emptyImage
+            self.mediaSelfExpiringIcon = generateTintedImage(image: selfExpiringImage, color: .white) ?? emptyImage
+            self.freeSelfExpiringIcon = generateTintedImage(image: selfExpiringImage, color: serviceColor.primaryText) ?? emptyImage
             
-            self.radialIndicatorFileIconIncoming = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/RadialProgressIconDocument"), color: .black)!
-            self.radialIndicatorFileIconOutgoing = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/RadialProgressIconDocument"), color: .black)!
+            self.radialIndicatorFileIconIncoming = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/RadialProgressIconDocument"), color: .black) ?? emptyImage
+            self.radialIndicatorFileIconOutgoing = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/RadialProgressIconDocument"), color: .black) ?? emptyImage
             
-            self.radialIndicatorViewOnceIcon = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/ViewOnce"), color: .black)!
+            self.radialIndicatorViewOnceIcon = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/ViewOnce"), color: .black) ?? emptyImage
         } else {
             self.chatMessageBackgroundIncomingMaskImage = messageBubbleImage(maxCornerRadius: maxCornerRadius, minCornerRadius: minCornerRadius, incoming: true, fillColor: .black, strokeColor: .clear, neighbors: .none, theme: theme, wallpaper: .color(0xffffff), knockout: true, mask: true, extendedEdges: true)
             self.chatMessageBackgroundIncomingExtractedMaskImage = messageBubbleImage(maxCornerRadius: maxCornerRadius, minCornerRadius: minCornerRadius, incoming: true, fillColor: .black, strokeColor: .clear, neighbors: .extracted, theme: theme, wallpaper: .color(0xffffff), knockout: true, mask: true, extendedEdges: true)
@@ -467,83 +476,83 @@ public final class PrincipalThemeEssentialGraphics {
             self.chatMessageBackgroundIncomingMergedSideHighlightedImage = messageBubbleImage(maxCornerRadius: maxCornerRadius, minCornerRadius: minCornerRadius, incoming: true, fillColor: .white, strokeColor: .clear, neighbors: .side, theme: theme, wallpaper: wallpaper, knockout: highlightKnockout, extendedEdges: true, alwaysFillColor: true).withRenderingMode(.alwaysTemplate)
             self.chatMessageBackgroundOutgoingMergedSideHighlightedImage = messageBubbleImage(maxCornerRadius: maxCornerRadius, minCornerRadius: minCornerRadius, incoming: false, fillColor: .white, strokeColor: .clear, neighbors: .side, theme: theme, wallpaper: wallpaper, knockout: highlightKnockout, extendedEdges: true, alwaysFillColor: true).withRenderingMode(.alwaysTemplate)
             
-            self.checkBubbleFullImage = generateCheckImage(partial: false, color: theme.message.outgoingCheckColor, width: 11.0)!
-            self.checkBubblePartialImage = generateCheckImage(partial: true, color: theme.message.outgoingCheckColor, width: 11.0)!
+            self.checkBubbleFullImage = generateCheckImage(partial: false, color: theme.message.outgoingCheckColor, width: 11.0) ?? emptyImage
+            self.checkBubblePartialImage = generateCheckImage(partial: true, color: theme.message.outgoingCheckColor, width: 11.0) ?? emptyImage
             
-            self.checkMediaFullImage = generateCheckImage(partial: false, color: .white, width: 11.0)!
-            self.checkMediaPartialImage = generateCheckImage(partial: true, color: .white, width: 11.0)!
+            self.checkMediaFullImage = generateCheckImage(partial: false, color: .white, width: 11.0) ?? emptyImage
+            self.checkMediaPartialImage = generateCheckImage(partial: true, color: .white, width: 11.0) ?? emptyImage
             
-            self.checkFreeFullImage = generateCheckImage(partial: false, color: serviceColor.primaryText, width: 11.0)!
-            self.checkFreePartialImage = generateCheckImage(partial: true, color: serviceColor.primaryText, width: 11.0)!
+            self.checkFreeFullImage = generateCheckImage(partial: false, color: serviceColor.primaryText, width: 11.0) ?? emptyImage
+            self.checkFreePartialImage = generateCheckImage(partial: true, color: serviceColor.primaryText, width: 11.0) ?? emptyImage
             
-            self.clockBubbleIncomingFrameImage = generateClockFrameImage(color: theme.message.incoming.pendingActivityColor)!
-            self.clockBubbleIncomingMinImage = generateClockMinImage(color: theme.message.incoming.pendingActivityColor)!
-            self.clockBubbleOutgoingFrameImage = generateClockFrameImage(color: theme.message.outgoing.pendingActivityColor)!
-            self.clockBubbleOutgoingMinImage = generateClockMinImage(color: theme.message.outgoing.pendingActivityColor)!
+            self.clockBubbleIncomingFrameImage = generateClockFrameImage(color: theme.message.incoming.pendingActivityColor) ?? emptyImage
+            self.clockBubbleIncomingMinImage = generateClockMinImage(color: theme.message.incoming.pendingActivityColor) ?? emptyImage
+            self.clockBubbleOutgoingFrameImage = generateClockFrameImage(color: theme.message.outgoing.pendingActivityColor) ?? emptyImage
+            self.clockBubbleOutgoingMinImage = generateClockMinImage(color: theme.message.outgoing.pendingActivityColor) ?? emptyImage
             
-            self.clockMediaFrameImage = generateClockFrameImage(color: .white)!
-            self.clockMediaMinImage = generateClockMinImage(color: .white)!
+            self.clockMediaFrameImage = generateClockFrameImage(color: .white) ?? emptyImage
+            self.clockMediaMinImage = generateClockMinImage(color: .white) ?? emptyImage
             
-            self.clockFreeFrameImage = generateClockFrameImage(color: serviceColor.primaryText)!
-            self.clockFreeMinImage = generateClockMinImage(color: serviceColor.primaryText)!
+            self.clockFreeFrameImage = generateClockFrameImage(color: serviceColor.primaryText) ?? emptyImage
+            self.clockFreeMinImage = generateClockMinImage(color: serviceColor.primaryText) ?? emptyImage
             
-            self.dateAndStatusMediaBackground = generateStretchableFilledCircleImage(diameter: 18.0, color: theme.message.mediaDateAndStatusFillColor)!
-            self.dateAndStatusFreeBackground = generateStretchableFilledCircleImage(diameter: 18.0, color: serviceColor.dateFillStatic)!
+            self.dateAndStatusMediaBackground = generateStretchableFilledCircleImage(diameter: 18.0, color: theme.message.mediaDateAndStatusFillColor) ?? emptyImage
+            self.dateAndStatusFreeBackground = generateStretchableFilledCircleImage(diameter: 18.0, color: serviceColor.dateFillStatic) ?? emptyImage
             
-            let impressionCountImage = UIImage(bundleImageName: "Chat/Message/ImpressionCount")!
-            self.incomingDateAndStatusImpressionIcon = generateTintedImage(image: impressionCountImage, color: theme.message.incoming.secondaryTextColor)!
-            self.outgoingDateAndStatusImpressionIcon = generateTintedImage(image: impressionCountImage, color: theme.message.outgoing.secondaryTextColor)!
-            self.mediaImpressionIcon = generateTintedImage(image: impressionCountImage, color: .white)!
-            self.freeImpressionIcon = generateTintedImage(image: impressionCountImage, color: serviceColor.primaryText)!
+            let impressionCountImage = UIImage(bundleImageName: "Chat/Message/ImpressionCount") ?? emptyImage
+            self.incomingDateAndStatusImpressionIcon = generateTintedImage(image: impressionCountImage, color: theme.message.incoming.secondaryTextColor) ?? emptyImage
+            self.outgoingDateAndStatusImpressionIcon = generateTintedImage(image: impressionCountImage, color: theme.message.outgoing.secondaryTextColor) ?? emptyImage
+            self.mediaImpressionIcon = generateTintedImage(image: impressionCountImage, color: .white) ?? emptyImage
+            self.freeImpressionIcon = generateTintedImage(image: impressionCountImage, color: serviceColor.primaryText) ?? emptyImage
             
-            let repliesImage = UIImage(bundleImageName: "Chat/Message/ReplyCount")!
-            self.incomingDateAndStatusRepliesIcon = generateTintedImage(image: repliesImage, color: theme.message.incoming.secondaryTextColor)!
-            self.outgoingDateAndStatusRepliesIcon = generateTintedImage(image: repliesImage, color: theme.message.outgoing.secondaryTextColor)!
-            self.mediaRepliesIcon = generateTintedImage(image: repliesImage, color: .white)!
-            self.freeRepliesIcon = generateTintedImage(image: repliesImage, color: serviceColor.primaryText)!
+            let repliesImage = UIImage(bundleImageName: "Chat/Message/ReplyCount") ?? emptyImage
+            self.incomingDateAndStatusRepliesIcon = generateTintedImage(image: repliesImage, color: theme.message.incoming.secondaryTextColor) ?? emptyImage
+            self.outgoingDateAndStatusRepliesIcon = generateTintedImage(image: repliesImage, color: theme.message.outgoing.secondaryTextColor) ?? emptyImage
+            self.mediaRepliesIcon = generateTintedImage(image: repliesImage, color: .white) ?? emptyImage
+            self.freeRepliesIcon = generateTintedImage(image: repliesImage, color: serviceColor.primaryText) ?? emptyImage
             
-            let starsImage = UIImage(bundleImageName: "Chat/Message/StarsCount")!
-            self.incomingDateAndStatusStarsIcon = generateTintedImage(image: starsImage, color: theme.message.incoming.secondaryTextColor)!
-            self.outgoingDateAndStatusStarsIcon = generateTintedImage(image: starsImage, color: theme.message.outgoing.secondaryTextColor)!
-            self.mediaStarsIcon = generateTintedImage(image: starsImage, color: .white)!
-            self.freeStarsIcon = generateTintedImage(image: starsImage, color: serviceColor.primaryText)!
+            let starsImage = UIImage(bundleImageName: "Chat/Message/StarsCount") ?? emptyImage
+            self.incomingDateAndStatusStarsIcon = generateTintedImage(image: starsImage, color: theme.message.incoming.secondaryTextColor) ?? emptyImage
+            self.outgoingDateAndStatusStarsIcon = generateTintedImage(image: starsImage, color: theme.message.outgoing.secondaryTextColor) ?? emptyImage
+            self.mediaStarsIcon = generateTintedImage(image: starsImage, color: .white) ?? emptyImage
+            self.freeStarsIcon = generateTintedImage(image: starsImage, color: serviceColor.primaryText) ?? emptyImage
 
-            let tonImage = generateScaledImage(image: UIImage(bundleImageName: "Ads/TonMedium"), size: CGSize(width: 12.0, height: 12.0), opaque: false)!
-            self.incomingDateAndStatusTonIcon = generateTintedImage(image: tonImage, color: theme.message.incoming.secondaryTextColor)!
-            self.outgoingDateAndStatusTonIcon = generateTintedImage(image: tonImage, color: theme.message.outgoing.secondaryTextColor)!
-            self.mediaTonIcon = generateTintedImage(image: tonImage, color: .white)!
-            self.freeTonIcon = generateTintedImage(image: tonImage, color: serviceColor.primaryText)!
+            let tonImage = generateScaledImage(image: UIImage(bundleImageName: "Ads/TonMedium"), size: CGSize(width: 12.0, height: 12.0), opaque: false) ?? emptyImage
+            self.incomingDateAndStatusTonIcon = generateTintedImage(image: tonImage, color: theme.message.incoming.secondaryTextColor) ?? emptyImage
+            self.outgoingDateAndStatusTonIcon = generateTintedImage(image: tonImage, color: theme.message.outgoing.secondaryTextColor) ?? emptyImage
+            self.mediaTonIcon = generateTintedImage(image: tonImage, color: .white) ?? emptyImage
+            self.freeTonIcon = generateTintedImage(image: tonImage, color: serviceColor.primaryText) ?? emptyImage
             
-            let pinnedImage = UIImage(bundleImageName: "Chat/Message/Pinned")!
-            self.incomingDateAndStatusPinnedIcon = generateTintedImage(image: pinnedImage, color: theme.message.incoming.secondaryTextColor)!
-            self.outgoingDateAndStatusPinnedIcon = generateTintedImage(image: pinnedImage, color: theme.message.outgoing.secondaryTextColor)!
-            self.mediaPinnedIcon = generateTintedImage(image: pinnedImage, color: .white)!
-            self.freePinnedIcon = generateTintedImage(image: pinnedImage, color: serviceColor.primaryText)!
+            let pinnedImage = UIImage(bundleImageName: "Chat/Message/Pinned") ?? emptyImage
+            self.incomingDateAndStatusPinnedIcon = generateTintedImage(image: pinnedImage, color: theme.message.incoming.secondaryTextColor) ?? emptyImage
+            self.outgoingDateAndStatusPinnedIcon = generateTintedImage(image: pinnedImage, color: theme.message.outgoing.secondaryTextColor) ?? emptyImage
+            self.mediaPinnedIcon = generateTintedImage(image: pinnedImage, color: .white) ?? emptyImage
+            self.freePinnedIcon = generateTintedImage(image: pinnedImage, color: serviceColor.primaryText) ?? emptyImage
             
-            let selfExpiringImage = UIImage(bundleImageName: "Chat/Message/SelfExpiring")!
-            self.incomingDateAndStatusSelfExpiringIcon = generateTintedImage(image: selfExpiringImage, color: theme.message.incoming.secondaryTextColor)!
-            self.outgoingDateAndStatusSelfExpiringIcon = generateTintedImage(image: selfExpiringImage, color: theme.message.outgoing.secondaryTextColor)!
-            self.mediaSelfExpiringIcon = generateTintedImage(image: selfExpiringImage, color: .white)!
-            self.freeSelfExpiringIcon = generateTintedImage(image: selfExpiringImage, color: serviceColor.primaryText)!
+            let selfExpiringImage = UIImage(bundleImageName: "Chat/Message/SelfExpiring") ?? emptyImage
+            self.incomingDateAndStatusSelfExpiringIcon = generateTintedImage(image: selfExpiringImage, color: theme.message.incoming.secondaryTextColor) ?? emptyImage
+            self.outgoingDateAndStatusSelfExpiringIcon = generateTintedImage(image: selfExpiringImage, color: theme.message.outgoing.secondaryTextColor) ?? emptyImage
+            self.mediaSelfExpiringIcon = generateTintedImage(image: selfExpiringImage, color: .white) ?? emptyImage
+            self.freeSelfExpiringIcon = generateTintedImage(image: selfExpiringImage, color: serviceColor.primaryText) ?? emptyImage
             
-            self.radialIndicatorFileIconIncoming = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/RadialProgressIconDocument"), color: .black)!
-            self.radialIndicatorFileIconOutgoing = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/RadialProgressIconDocument"), color: .black)!
+            self.radialIndicatorFileIconIncoming = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/RadialProgressIconDocument"), color: .black) ?? emptyImage
+            self.radialIndicatorFileIconOutgoing = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/RadialProgressIconDocument"), color: .black) ?? emptyImage
             
-            self.radialIndicatorViewOnceIcon = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/ViewOnce"), color: .black)!
+            self.radialIndicatorViewOnceIcon = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/ViewOnce"), color: .black) ?? emptyImage
         }
         
         let chatDateSize: CGFloat = 20.0
-        self.dateStaticBackground = generateImage(CGSize(width: chatDateSize, height: chatDateSize), contextGenerator: { size, context -> Void in
+        self.dateStaticBackground = (generateImage(CGSize(width: chatDateSize, height: chatDateSize), contextGenerator: { size, context -> Void in
             context.clear(CGRect(origin: CGPoint(), size: size))
             context.setFillColor(serviceColor.dateFillStatic.cgColor)
             context.fillEllipse(in: CGRect(origin: CGPoint(), size: size))
-        })!.stretchableImage(withLeftCapWidth: Int(chatDateSize) / 2, topCapHeight: Int(chatDateSize) / 2)
+        }) ?? emptyImage).stretchableImage(withLeftCapWidth: Int(chatDateSize) / 2, topCapHeight: Int(chatDateSize) / 2)
         
-        self.dateFloatingBackground = generateImage(CGSize(width: chatDateSize, height: chatDateSize), contextGenerator: { size, context -> Void in
+        self.dateFloatingBackground = (generateImage(CGSize(width: chatDateSize, height: chatDateSize), contextGenerator: { size, context -> Void in
             context.clear(CGRect(origin: CGPoint(), size: size))
             context.setFillColor(serviceColor.dateFillFloating.cgColor)
             context.fillEllipse(in: CGRect(origin: CGPoint(), size: size))
-        })!.stretchableImage(withLeftCapWidth: Int(chatDateSize) / 2, topCapHeight: Int(chatDateSize) / 2)
+        }) ?? emptyImage).stretchableImage(withLeftCapWidth: Int(chatDateSize) / 2, topCapHeight: Int(chatDateSize) / 2)
     }
 }
 
@@ -595,25 +604,26 @@ public final class PrincipalThemeAdditionalGraphics {
     public let emptyChatListCheckIcon: UIImage
     
     init(_ theme: PresentationThemeChat, wallpaper: TelegramWallpaper, bubbleCorners: PresentationChatBubbleCorners) {
+        let emptyImage = UIImage()
         let serviceColor = serviceMessageColorComponents(chatTheme: theme, wallpaper: wallpaper)
-        self.chatServiceBubbleFillImage = generateImage(CGSize(width: 20.0, height: 20.0), contextGenerator: { size, context -> Void in
+        self.chatServiceBubbleFillImage = (generateImage(CGSize(width: 20.0, height: 20.0), contextGenerator: { size, context -> Void in
             context.clear(CGRect(origin: CGPoint(), size: size))
             context.setFillColor(serviceColor.fill.cgColor)
             context.fillEllipse(in: CGRect(origin: CGPoint(), size: size))
-        })!.stretchableImage(withLeftCapWidth: 8, topCapHeight: 8)
+        }) ?? emptyImage).stretchableImage(withLeftCapWidth: 8, topCapHeight: 8)
         
-        self.chatServiceVerticalLineImage = generateImage(CGSize(width: 2.0, height: 3.0), contextGenerator: { size, context in
+        self.chatServiceVerticalLineImage = (generateImage(CGSize(width: 2.0, height: 3.0), contextGenerator: { size, context in
             context.clear(CGRect(origin: CGPoint(), size: size))
             context.setFillColor(serviceColor.primaryText.cgColor)
             context.fillEllipse(in: CGRect(origin: CGPoint(), size: CGSize(width: 2.0, height: 2.0)))
             context.fillEllipse(in: CGRect(origin: CGPoint(x: 0.0, y: 1.0), size: CGSize(width: 2.0, height: 2.0)))
-        })!.stretchableImage(withLeftCapWidth: 0, topCapHeight: 1)
+        }) ?? emptyImage).stretchableImage(withLeftCapWidth: 0, topCapHeight: 1)
         
-        self.chatFreeformContentAdditionalInfoBackgroundImage = generateStretchableFilledCircleImage(radius: 10.0, color: serviceColor.fill)!
-        self.chatEmptyItemBackgroundImage = generateStretchableFilledCircleImage(radius: 14.0, color: serviceColor.fill)!
-        self.chatLoadingIndicatorBackgroundImage = generateStretchableFilledCircleImage(diameter: 30.0, color: serviceColor.fill)!
+        self.chatFreeformContentAdditionalInfoBackgroundImage = generateStretchableFilledCircleImage(radius: 10.0, color: serviceColor.fill) ?? emptyImage
+        self.chatEmptyItemBackgroundImage = generateStretchableFilledCircleImage(radius: 14.0, color: serviceColor.fill) ?? emptyImage
+        self.chatLoadingIndicatorBackgroundImage = generateStretchableFilledCircleImage(diameter: 30.0, color: serviceColor.fill) ?? emptyImage
         
-        self.chatBubbleNavigateButtonImage = chatBubbleActionButtonImage(fillColor: bubbleVariableColor(variableColor: theme.message.shareButtonFillColor, wallpaper: wallpaper), strokeColor: bubbleVariableColor(variableColor: theme.message.shareButtonStrokeColor, wallpaper: wallpaper), foregroundColor: bubbleVariableColor(variableColor: theme.message.shareButtonForegroundColor, wallpaper: wallpaper), image: UIImage(bundleImageName: "Chat/Message/NavigateToMessageIcon"), iconOffset: CGPoint(x: 0.0, y: 1.0))!
+        self.chatBubbleNavigateButtonImage = chatBubbleActionButtonImage(fillColor: bubbleVariableColor(variableColor: theme.message.shareButtonFillColor, wallpaper: wallpaper), strokeColor: bubbleVariableColor(variableColor: theme.message.shareButtonStrokeColor, wallpaper: wallpaper), foregroundColor: bubbleVariableColor(variableColor: theme.message.shareButtonForegroundColor, wallpaper: wallpaper), image: UIImage(bundleImageName: "Chat/Message/NavigateToMessageIcon"), iconOffset: CGPoint(x: 0.0, y: 1.0)) ?? emptyImage
         self.chatBubbleActionButtonIncomingMiddleImage = messageBubbleActionButtonImage(color: bubbleVariableColor(variableColor: theme.message.incoming.actionButtonsFillColor, wallpaper: wallpaper), strokeColor: bubbleVariableColor(variableColor: theme.message.incoming.actionButtonsStrokeColor, wallpaper: wallpaper), position: .middle, bubbleCorners: bubbleCorners)
         self.chatBubbleActionButtonMiddleMaskImage = messageBubbleActionButtonImage(color: .white, strokeColor: .clear, position: .middle, bubbleCorners: bubbleCorners)
         self.chatBubbleActionButtonIncomingBottomLeftImage = messageBubbleActionButtonImage(color: bubbleVariableColor(variableColor: theme.message.incoming.actionButtonsFillColor, wallpaper: wallpaper), strokeColor: bubbleVariableColor(variableColor: theme.message.incoming.actionButtonsStrokeColor, wallpaper: wallpaper), position: .bottomLeft, bubbleCorners: bubbleCorners)
@@ -626,29 +636,29 @@ public final class PrincipalThemeAdditionalGraphics {
         self.chatBubbleActionButtonOutgoingBottomLeftImage = messageBubbleActionButtonImage(color: bubbleVariableColor(variableColor: theme.message.outgoing.actionButtonsFillColor, wallpaper: wallpaper), strokeColor: bubbleVariableColor(variableColor: theme.message.outgoing.actionButtonsStrokeColor, wallpaper: wallpaper), position: .bottomLeft, bubbleCorners: bubbleCorners)
         self.chatBubbleActionButtonOutgoingBottomRightImage = messageBubbleActionButtonImage(color: bubbleVariableColor(variableColor: theme.message.outgoing.actionButtonsFillColor, wallpaper: wallpaper), strokeColor: bubbleVariableColor(variableColor: theme.message.outgoing.actionButtonsStrokeColor, wallpaper: wallpaper), position: .bottomRight, bubbleCorners: bubbleCorners)
         self.chatBubbleActionButtonOutgoingBottomSingleImage = messageBubbleActionButtonImage(color: bubbleVariableColor(variableColor: theme.message.outgoing.actionButtonsFillColor, wallpaper: wallpaper), strokeColor: bubbleVariableColor(variableColor: theme.message.outgoing.actionButtonsStrokeColor, wallpaper: wallpaper), position: .bottomSingle, bubbleCorners: bubbleCorners)
-        self.chatBubbleActionButtonIncomingMessageIconImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/BotMessage"), color: bubbleVariableColor(variableColor: theme.message.incoming.actionButtonsTextColor, wallpaper: wallpaper))!
-        self.chatBubbleActionButtonIncomingLinkIconImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/BotLink"), color: bubbleVariableColor(variableColor: theme.message.incoming.actionButtonsTextColor, wallpaper: wallpaper))!
-        self.chatBubbleActionButtonIncomingShareIconImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/BotShare"), color: bubbleVariableColor(variableColor: theme.message.incoming.actionButtonsTextColor, wallpaper: wallpaper))!
-        self.chatBubbleActionButtonIncomingPhoneIconImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/BotPhone"), color: bubbleVariableColor(variableColor: theme.message.incoming.actionButtonsTextColor, wallpaper: wallpaper))!
-        self.chatBubbleActionButtonIncomingLocationIconImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/BotLocation"), color: bubbleVariableColor(variableColor: theme.message.incoming.actionButtonsTextColor, wallpaper: wallpaper))!
-        self.chatBubbleActionButtonIncomingPaymentIconImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/BotPayment"), color: bubbleVariableColor(variableColor: theme.message.incoming.actionButtonsTextColor, wallpaper: wallpaper))!
-        self.chatBubbleActionButtonIncomingProfileIconImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/BotProfile"), color: bubbleVariableColor(variableColor: theme.message.incoming.actionButtonsTextColor, wallpaper: wallpaper))!
-        self.chatBubbleActionButtonIncomingAddToChatIconImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/BotAddToChat"), color: bubbleVariableColor(variableColor: theme.message.incoming.actionButtonsTextColor, wallpaper: wallpaper))!
-        self.chatBubbleActionButtonIncomingWebAppIconImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/BotWebApp"), color: bubbleVariableColor(variableColor: theme.message.incoming.actionButtonsTextColor, wallpaper: wallpaper))!
-        self.chatBubbleActionButtonIncomingCopyIconImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/BotCopy"), color: bubbleVariableColor(variableColor: theme.message.incoming.actionButtonsTextColor, wallpaper: wallpaper))!
+        self.chatBubbleActionButtonIncomingMessageIconImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/BotMessage"), color: bubbleVariableColor(variableColor: theme.message.incoming.actionButtonsTextColor, wallpaper: wallpaper)) ?? emptyImage
+        self.chatBubbleActionButtonIncomingLinkIconImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/BotLink"), color: bubbleVariableColor(variableColor: theme.message.incoming.actionButtonsTextColor, wallpaper: wallpaper)) ?? emptyImage
+        self.chatBubbleActionButtonIncomingShareIconImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/BotShare"), color: bubbleVariableColor(variableColor: theme.message.incoming.actionButtonsTextColor, wallpaper: wallpaper)) ?? emptyImage
+        self.chatBubbleActionButtonIncomingPhoneIconImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/BotPhone"), color: bubbleVariableColor(variableColor: theme.message.incoming.actionButtonsTextColor, wallpaper: wallpaper)) ?? emptyImage
+        self.chatBubbleActionButtonIncomingLocationIconImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/BotLocation"), color: bubbleVariableColor(variableColor: theme.message.incoming.actionButtonsTextColor, wallpaper: wallpaper)) ?? emptyImage
+        self.chatBubbleActionButtonIncomingPaymentIconImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/BotPayment"), color: bubbleVariableColor(variableColor: theme.message.incoming.actionButtonsTextColor, wallpaper: wallpaper)) ?? emptyImage
+        self.chatBubbleActionButtonIncomingProfileIconImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/BotProfile"), color: bubbleVariableColor(variableColor: theme.message.incoming.actionButtonsTextColor, wallpaper: wallpaper)) ?? emptyImage
+        self.chatBubbleActionButtonIncomingAddToChatIconImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/BotAddToChat"), color: bubbleVariableColor(variableColor: theme.message.incoming.actionButtonsTextColor, wallpaper: wallpaper)) ?? emptyImage
+        self.chatBubbleActionButtonIncomingWebAppIconImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/BotWebApp"), color: bubbleVariableColor(variableColor: theme.message.incoming.actionButtonsTextColor, wallpaper: wallpaper)) ?? emptyImage
+        self.chatBubbleActionButtonIncomingCopyIconImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/BotCopy"), color: bubbleVariableColor(variableColor: theme.message.incoming.actionButtonsTextColor, wallpaper: wallpaper)) ?? emptyImage
         
-        self.chatBubbleActionButtonOutgoingMessageIconImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/BotMessage"), color: bubbleVariableColor(variableColor: theme.message.outgoing.actionButtonsTextColor, wallpaper: wallpaper))!
-        self.chatBubbleActionButtonOutgoingLinkIconImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/BotLink"), color: bubbleVariableColor(variableColor: theme.message.outgoing.actionButtonsTextColor, wallpaper: wallpaper))!
-        self.chatBubbleActionButtonOutgoingShareIconImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/BotShare"), color: bubbleVariableColor(variableColor: theme.message.outgoing.actionButtonsTextColor, wallpaper: wallpaper))!
-        self.chatBubbleActionButtonOutgoingPhoneIconImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/BotPhone"), color: bubbleVariableColor(variableColor: theme.message.outgoing.actionButtonsTextColor, wallpaper: wallpaper))!
-        self.chatBubbleActionButtonOutgoingLocationIconImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/BotLocation"), color: bubbleVariableColor(variableColor: theme.message.outgoing.actionButtonsTextColor, wallpaper: wallpaper))!
-        self.chatBubbleActionButtonOutgoingPaymentIconImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/BotPayment"), color: bubbleVariableColor(variableColor: theme.message.outgoing.actionButtonsTextColor, wallpaper: wallpaper))!
-        self.chatBubbleActionButtonOutgoingProfileIconImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/BotProfile"), color: bubbleVariableColor(variableColor: theme.message.outgoing.actionButtonsTextColor, wallpaper: wallpaper))!
-        self.chatBubbleActionButtonOutgoingAddToChatIconImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/BotAddToChat"), color: bubbleVariableColor(variableColor: theme.message.outgoing.actionButtonsTextColor, wallpaper: wallpaper))!
-        self.chatBubbleActionButtonOutgoingWebAppIconImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/BotWebApp"), color: bubbleVariableColor(variableColor: theme.message.outgoing.actionButtonsTextColor, wallpaper: wallpaper))!
-        self.chatBubbleActionButtonOutgoingCopyIconImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/BotCopy"), color: bubbleVariableColor(variableColor: theme.message.outgoing.actionButtonsTextColor, wallpaper: wallpaper))!
+        self.chatBubbleActionButtonOutgoingMessageIconImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/BotMessage"), color: bubbleVariableColor(variableColor: theme.message.outgoing.actionButtonsTextColor, wallpaper: wallpaper)) ?? emptyImage
+        self.chatBubbleActionButtonOutgoingLinkIconImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/BotLink"), color: bubbleVariableColor(variableColor: theme.message.outgoing.actionButtonsTextColor, wallpaper: wallpaper)) ?? emptyImage
+        self.chatBubbleActionButtonOutgoingShareIconImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/BotShare"), color: bubbleVariableColor(variableColor: theme.message.outgoing.actionButtonsTextColor, wallpaper: wallpaper)) ?? emptyImage
+        self.chatBubbleActionButtonOutgoingPhoneIconImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/BotPhone"), color: bubbleVariableColor(variableColor: theme.message.outgoing.actionButtonsTextColor, wallpaper: wallpaper)) ?? emptyImage
+        self.chatBubbleActionButtonOutgoingLocationIconImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/BotLocation"), color: bubbleVariableColor(variableColor: theme.message.outgoing.actionButtonsTextColor, wallpaper: wallpaper)) ?? emptyImage
+        self.chatBubbleActionButtonOutgoingPaymentIconImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/BotPayment"), color: bubbleVariableColor(variableColor: theme.message.outgoing.actionButtonsTextColor, wallpaper: wallpaper)) ?? emptyImage
+        self.chatBubbleActionButtonOutgoingProfileIconImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/BotProfile"), color: bubbleVariableColor(variableColor: theme.message.outgoing.actionButtonsTextColor, wallpaper: wallpaper)) ?? emptyImage
+        self.chatBubbleActionButtonOutgoingAddToChatIconImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/BotAddToChat"), color: bubbleVariableColor(variableColor: theme.message.outgoing.actionButtonsTextColor, wallpaper: wallpaper)) ?? emptyImage
+        self.chatBubbleActionButtonOutgoingWebAppIconImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/BotWebApp"), color: bubbleVariableColor(variableColor: theme.message.outgoing.actionButtonsTextColor, wallpaper: wallpaper)) ?? emptyImage
+        self.chatBubbleActionButtonOutgoingCopyIconImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/BotCopy"), color: bubbleVariableColor(variableColor: theme.message.outgoing.actionButtonsTextColor, wallpaper: wallpaper)) ?? emptyImage
         
-        self.chatEmptyItemLockIcon = generateImage(CGSize(width: 9.0, height: 13.0), rotatedContext: { size, context in
+        self.chatEmptyItemLockIcon = (generateImage(CGSize(width: 9.0, height: 13.0), rotatedContext: { size, context in
             context.clear(CGRect(origin: CGPoint(), size: size))
             
             context.translateBy(x: 0.0, y: 1.0)
@@ -659,7 +669,7 @@ public final class PrincipalThemeAdditionalGraphics {
             
             let _ = try? drawSvgPath(context, path: "M4.5,0.600000024 C5.88071187,0.600000024 7,1.88484952 7,3.46979169 L7,7.39687502 C7,8.9818172 5.88071187,10.2666667 4.5,10.2666667 C3.11928813,10.2666667 2,8.9818172 2,7.39687502 L2,3.46979169 C2,1.88484952 3.11928813,0.600000024 4.5,0.600000024 S ")
             let _ = try? drawSvgPath(context, path: "M1.32,5.65999985 L7.68,5.65999985 C8.40901587,5.65999985 9,6.25098398 9,6.97999985 L9,10.6733332 C9,11.4023491 8.40901587,11.9933332 7.68,11.9933332 L1.32,11.9933332 C0.59098413,11.9933332 1.11022302e-16,11.4023491 0,10.6733332 L2.22044605e-16,6.97999985 C1.11022302e-16,6.25098398 0.59098413,5.65999985 1.32,5.65999985 Z ")
-        })!
-        self.emptyChatListCheckIcon = generateTintedImage(image: UIImage(bundleImageName: "Chat/Empty Chat/ListCheckIcon"), color: serviceColor.primaryText)!
+        }) ?? emptyImage)
+        self.emptyChatListCheckIcon = generateTintedImage(image: UIImage(bundleImageName: "Chat/Empty Chat/ListCheckIcon"), color: serviceColor.primaryText) ?? emptyImage
     }
 }

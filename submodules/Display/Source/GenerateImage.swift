@@ -46,7 +46,13 @@ private func withImageBytes(image: UIImage, _ f: (UnsafePointer<UInt8>, Int, Int
     }
     
     context.scaleBy(x: selectedScale, y: selectedScale)
-    context.draw(image.cgImage!, in: CGRect(origin: CGPoint(), size: image.size))
+    if let cgImage = image.cgImage {
+        context.draw(cgImage, in: CGRect(origin: CGPoint(), size: image.size))
+    } else {
+        UIGraphicsPushContext(context)
+        image.draw(in: CGRect(origin: CGPoint(), size: image.size))
+        UIGraphicsPopContext()
+    }
     
     f(bytes, Int(scaledSize.width), Int(scaledSize.height), bytesPerRow)
 }
@@ -293,8 +299,15 @@ public func generateSmallHorizontalStretchableFilledCircleImage(diameter: CGFloa
                 context.setBlendMode(.copy)
             }
             
-            context.clip(to: CGRect(origin: CGPoint(), size: size), mask: subImage.cgImage!)
-            context.fill(CGRect(origin: CGPoint(), size: size))
+            if let cgImage = subImage.cgImage {
+                context.clip(to: CGRect(origin: CGPoint(), size: size), mask: cgImage)
+                context.fill(CGRect(origin: CGPoint(), size: size))
+            } else {
+                UIGraphicsPushContext(context)
+                color.setFill()
+                subImage.withRenderingMode(.alwaysTemplate).draw(in: CGRect(origin: CGPoint(), size: size))
+                UIGraphicsPopContext()
+            }
         }
     })?.stretchableImage(withLeftCapWidth: Int(diameter / 2), topCapHeight: Int(diameter / 2))
 }
@@ -316,19 +329,27 @@ public func generateTintedImage(image: UIImage?, color: UIColor, backgroundColor
             context.fill(CGRect(origin: CGPoint(), size: imageSize))
         }
         
-        let imageRect = CGRect(origin: CGPoint(), size: imageSize)
-        context.saveGState()
-        context.translateBy(x: imageRect.midX, y: imageRect.midY)
-        context.scaleBy(x: flipHorizontally ? -1.0 : 1.0, y: -1.0)
-        context.translateBy(x: -imageRect.midX, y: -imageRect.midY)
         if let cgImage = image.cgImage {
+            context.saveGState()
+            context.translateBy(x: imageRect.midX, y: imageRect.midY)
+            context.scaleBy(x: flipHorizontally ? -1.0 : 1.0, y: -1.0)
+            context.translateBy(x: -imageRect.midX, y: -imageRect.midY)
             context.clip(to: imageRect, mask: cgImage)
             context.setFillColor(color.cgColor)
             context.fill(imageRect)
+            context.restoreGState()
         } else {
-            image.draw(in: imageRect)
+            context.saveGState()
+            if flipHorizontally {
+                context.translateBy(x: imageRect.width, y: 0.0)
+                context.scaleBy(x: -1.0, y: 1.0)
+            }
+            UIGraphicsPushContext(context)
+            color.setFill()
+            image.withRenderingMode(.alwaysTemplate).draw(in: imageRect)
+            UIGraphicsPopContext()
+            context.restoreGState()
         }
-        context.restoreGState()
     }
     
     let tintedImage = UIGraphicsGetImageFromCurrentImageContext() ?? image
@@ -347,47 +368,53 @@ public func generateGradientTintedImage(image: UIImage?, colors: [UIColor], dire
     UIGraphicsBeginImageContextWithOptions(imageSize, false, image.scale)
     if let context = UIGraphicsGetCurrentContext() {
         let imageRect = CGRect(origin: CGPoint(), size: imageSize)
-        context.saveGState()
-        context.translateBy(x: imageRect.midX, y: imageRect.midY)
-        context.scaleBy(x: 1.0, y: -1.0)
-        context.translateBy(x: -imageRect.midX, y: -imageRect.midY)
-        context.clip(to: imageRect, mask: image.cgImage!)
+        if let cgImage = image.cgImage {
+            context.saveGState()
+            context.translateBy(x: imageRect.midX, y: imageRect.midY)
+            context.scaleBy(x: 1.0, y: -1.0)
+            context.translateBy(x: -imageRect.midX, y: -imageRect.midY)
+            context.clip(to: imageRect, mask: cgImage)
 
-        if colors.count >= 2 {
-            let gradientColors = colors.map { $0.cgColor } as CFArray
+            if colors.count >= 2 {
+                let gradientColors = colors.map { $0.cgColor } as CFArray
 
-            var locations: [CGFloat] = []
-            for i in 0 ..< colors.count {
-                let t = CGFloat(i) / CGFloat(colors.count - 1)
-                locations.append(t)
-            }
-            let colorSpace = DeviceGraphicsContextSettings.shared.colorSpace
-            let gradient = CGGradient(colorsSpace: colorSpace, colors: gradientColors, locations: &locations)!
-
-            let start: CGPoint
-            let end: CGPoint
-            switch direction {
-            case .horizontal:
-                start = .zero
-                end = CGPoint(x: imageRect.width, y: 0.0)
-            case .vertical:
-                start = CGPoint(x: 0.0, y: imageRect.height)
-                end = .zero
-            case .diagonal:
-                start = CGPoint(x: 0.0, y: 0.0)
-                end = CGPoint(x: imageRect.width, y: imageRect.height)
-            case .mirroredDiagonal:
-                start = CGPoint(x: imageRect.width, y: 0.0)
-                end = CGPoint(x: 0.0, y: imageRect.height)
+                var locations: [CGFloat] = []
+                for i in 0 ..< colors.count {
+                    let t = CGFloat(i) / CGFloat(colors.count - 1)
+                    locations.append(t)
+                }
+                let colorSpace = DeviceGraphicsContextSettings.shared.colorSpace
+                if let gradient = CGGradient(colorsSpace: colorSpace, colors: gradientColors, locations: &locations) {
+                    let start: CGPoint
+                    let end: CGPoint
+                    switch direction {
+                    case .horizontal:
+                        start = .zero
+                        end = CGPoint(x: imageRect.width, y: 0.0)
+                    case .vertical:
+                        start = CGPoint(x: 0.0, y: imageRect.height)
+                        end = .zero
+                    case .diagonal:
+                        start = CGPoint(x: 0.0, y: 0.0)
+                        end = CGPoint(x: imageRect.width, y: imageRect.height)
+                    case .mirroredDiagonal:
+                        start = CGPoint(x: imageRect.width, y: 0.0)
+                        end = CGPoint(x: 0.0, y: imageRect.height)
+                    }
+                    
+                    context.drawLinearGradient(gradient, start: start, end: end, options: CGGradientDrawingOptions())
+                }
+            } else if !colors.isEmpty {
+                context.setFillColor(colors[0].cgColor)
+                context.fill(imageRect)
             }
             
-            context.drawLinearGradient(gradient, start: start, end: end, options: CGGradientDrawingOptions())
-        } else if !colors.isEmpty {
-            context.setFillColor(colors[0].cgColor)
-            context.fill(imageRect)
+            context.restoreGState()
+        } else {
+            UIGraphicsPushContext(context)
+            image.draw(in: imageRect)
+            UIGraphicsPopContext()
         }
-        
-        context.restoreGState()
     }
     
     let tintedImage = UIGraphicsGetImageFromCurrentImageContext()!
@@ -473,7 +500,13 @@ public func generateScaledImage(image: UIImage?, size: CGSize, opaque: Bool = tr
         if !opaque {
             context.clear(CGRect(origin: CGPoint(), size: size))
         }
-        context.draw(image.cgImage!, in: CGRect(origin: CGPoint(), size: size))
+        if let cgImage = image.cgImage {
+            context.draw(cgImage, in: CGRect(origin: CGPoint(), size: size))
+        } else {
+            UIGraphicsPushContext(context)
+            image.draw(in: CGRect(origin: CGPoint(), size: size))
+            UIGraphicsPopContext()
+        }
     }, opaque: opaque, scale: scale)
 }
 

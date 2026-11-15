@@ -455,7 +455,14 @@ public struct PresentationResourcesChat {
                 context.translateBy(x: -imageRect.midX, y: -imageRect.midY)
                 
                 if let image = generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/ScheduleIcon"), color: theme.chat.inputPanel.actionControlForegroundColor) {
-                    context.draw(image.cgImage!, in: CGRect(origin: CGPoint(x: floorToScreenPixels((size.width - image.size.width) / 2.0), y: floorToScreenPixels((size.height - image.size.height) / 2.0)), size: image.size))
+                    let rect = CGRect(origin: CGPoint(x: floorToScreenPixels((size.width - image.size.width) / 2.0), y: floorToScreenPixels((size.height - image.size.height) / 2.0)), size: image.size)
+                    if let cgImage = image.cgImage {
+                        context.draw(cgImage, in: rect)
+                    } else {
+                        UIGraphicsPushContext(context)
+                        image.draw(in: rect)
+                        UIGraphicsPopContext()
+                    }
                 }
             })
         })
@@ -479,7 +486,14 @@ public struct PresentationResourcesChat {
                 }
                 
                 if let image = generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/ScheduleIcon"), color: color) {
-                    context.draw(image.cgImage!, in: CGRect(origin: CGPoint(x: floorToScreenPixels((size.width - image.size.width) / 2.0), y: floorToScreenPixels((size.height - image.size.height) / 2.0)), size: image.size))
+                    let rect = CGRect(origin: CGPoint(x: floorToScreenPixels((size.width - image.size.width) / 2.0), y: floorToScreenPixels((size.height - image.size.height) / 2.0)), size: image.size)
+                    if let cgImage = image.cgImage {
+                        context.draw(cgImage, in: rect)
+                    } else {
+                        UIGraphicsPushContext(context)
+                        image.draw(in: rect)
+                        UIGraphicsPopContext()
+                    }
                 }
             })
         })
@@ -586,7 +600,14 @@ public struct PresentationResourcesChat {
             if let image = generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Text/AccessoryIconTimer"), color: .white) {
                 return generateImage(CGSize(width: image.size.width, height: image.size.height + 1.0), contextGenerator: { size, context in
                     context.clear(CGRect(origin: CGPoint(), size: size))
-                    context.draw(image.cgImage!, in: CGRect(origin: CGPoint(x: 0.0, y: 2.0), size: image.size))
+                    let rect = CGRect(origin: CGPoint(x: 0.0, y: 2.0), size: image.size)
+                    if let cgImage = image.cgImage {
+                        context.draw(cgImage, in: rect)
+                    } else {
+                        UIGraphicsPushContext(context)
+                        image.draw(in: rect)
+                        UIGraphicsPopContext()
+                    }
                 })?.withRenderingMode(.alwaysTemplate)
             } else {
                 return nil
@@ -763,7 +784,14 @@ public struct PresentationResourcesChat {
                 context.clear(CGRect(origin: CGPoint(), size: size))
                 
                 if let image = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/InstantVideoMute"), color: .white, backgroundColor: nil) {
-                    context.draw(image.cgImage!, in: CGRect(origin: CGPoint(x: floor((size.width - image.size.width) / 2.0), y: floor((size.height - image.size.height) / 2.0)), size: image.size))
+                    let rect = CGRect(origin: CGPoint(x: floor((size.width - image.size.width) / 2.0), y: floor((size.height - image.size.height) / 2.0)), size: image.size)
+                    if let cgImage = image.cgImage {
+                        context.draw(cgImage, in: rect)
+                    } else {
+                        UIGraphicsPushContext(context)
+                        image.draw(in: rect)
+                        UIGraphicsPopContext()
+                    }
                 }
             })
         })
@@ -984,7 +1012,14 @@ public struct PresentationResourcesChat {
             }
             return generateImage(image.size, contextGenerator: { size, context in
                 context.clear(CGRect(origin: CGPoint(), size: size))
-                context.draw(image.cgImage!, in: CGRect(origin: CGPoint(x: 0.0, y: -1.0), size: image.size))
+                let rect = CGRect(origin: CGPoint(x: 0.0, y: -1.0), size: image.size)
+                if let cgImage = image.cgImage {
+                    context.draw(cgImage, in: rect)
+                } else {
+                    UIGraphicsPushContext(context)
+                    image.draw(in: rect)
+                    UIGraphicsPopContext()
+                }
             })
         })
     }

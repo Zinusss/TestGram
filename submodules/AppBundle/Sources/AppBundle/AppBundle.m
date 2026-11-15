@@ -83,6 +83,57 @@ NSBundle * _Nonnull getAppBundle() {
     if (image == nil) {
         image = [UIImage imageNamed:bundleImageName];
     }
+    
+    // Fallback 1: Try without directory prefix if bundleImageName contains '/'
+    if (image == nil) {
+        NSString *lastComponent = [bundleImageName lastPathComponent];
+        if (lastComponent != nil && ![lastComponent isEqualToString:bundleImageName]) {
+            if (bundle != nil) {
+                image = [UIImage imageNamed:lastComponent inBundle:bundle compatibleWithTraitCollection:nil];
+            }
+            if (image == nil && [NSBundle mainBundle] != bundle) {
+                image = [UIImage imageNamed:lastComponent inBundle:[NSBundle mainBundle] compatibleWithTraitCollection:nil];
+            }
+            if (image == nil) {
+                image = [UIImage imageNamed:lastComponent];
+            }
+        }
+    }
+    
+    // Fallback 2: Check framework bundles
+    if (image == nil) {
+        for (NSBundle *b in [NSBundle allFrameworks]) {
+            image = [UIImage imageNamed:bundleImageName inBundle:b compatibleWithTraitCollection:nil];
+            if (image != nil) {
+                break;
+            }
+            NSString *lastComponent = [bundleImageName lastPathComponent];
+            if (lastComponent != nil && ![lastComponent isEqualToString:bundleImageName]) {
+                image = [UIImage imageNamed:lastComponent inBundle:b compatibleWithTraitCollection:nil];
+                if (image != nil) {
+                    break;
+                }
+            }
+        }
+    }
+    
+    // Fallback 3: Check as loose file in bundle
+    if (image == nil && bundle != nil) {
+        NSString *filePath = [bundle pathForResource:bundleImageName ofType:@"png"];
+        if (filePath == nil) {
+            filePath = [bundle pathForResource:bundleImageName ofType:@"pdf"];
+        }
+        if (filePath == nil) {
+            filePath = [[NSBundle mainBundle] pathForResource:bundleImageName ofType:@"png"];
+        }
+        if (filePath == nil) {
+            filePath = [[NSBundle mainBundle] pathForResource:bundleImageName ofType:@"pdf"];
+        }
+        if (filePath != nil) {
+            image = [UIImage imageWithContentsOfFile:filePath];
+        }
+    }
+    
     return image;
 }
 

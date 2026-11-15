@@ -32,20 +32,27 @@ private final class GGMenuIconCache {
     static let shared = GGMenuIconCache()
 
     private var images: [String: UIImage] = [:]
+    private let lock = NSLock()
     // The tile is asked for by Telegram's Settings, which may build its rows off the main thread:
     // static lets are initialized once and thread-safely.
     private static let tile: UIImage? = ggRenderSettingsTile()
 
     func image(for icon: GGMenuIcon, color: UIColor) -> UIImage? {
-        assert(Thread.isMainThread)
         let key = "\(icon)|\(color.ggHexKey)"
+        self.lock.lock()
         if let image = self.images[key] {
+            self.lock.unlock()
             return image
         }
+        self.lock.unlock()
+
         guard let image = ggRenderMenuIcon(icon, color: color) else {
             return nil
         }
+
+        self.lock.lock()
         self.images[key] = image
+        self.lock.unlock()
         return image
     }
 
@@ -54,16 +61,63 @@ private final class GGMenuIconCache {
     }
 
     func mark(color: UIColor) -> UIImage? {
-        assert(Thread.isMainThread)
         let key = "headerMark|\(color.ggHexKey)"
+        self.lock.lock()
         if let image = self.images[key] {
+            self.lock.unlock()
             return image
         }
+        self.lock.unlock()
+
         guard let image = ggRenderHeaderMark(color: color) else {
             return nil
         }
+
+        self.lock.lock()
         self.images[key] = image
+        self.lock.unlock()
         return image
+    }
+}
+
+private func ggFallbackSystemName(for bundleName: String) -> String? {
+    let name = (bundleName as NSString).lastPathComponent
+    switch name {
+    case "Ban": return "slash.circle"
+    case "Time", "Timer": return "clock"
+    case "Tag", "PriceTag": return "tag"
+    case "FormatText": return "textformat"
+    case "Lock": return "lock"
+    case "Copy": return "doc.on.doc"
+    case "Globe": return "globe"
+    case "Settings", "Customize": return "gearshape"
+    case "Delete": return "trash"
+    case "Edit": return "pencil"
+    case "User", "AddUser": return "person"
+    case "Info": return "info.circle"
+    case "Archive": return "archivebox"
+    case "Download": return "arrow.down.circle"
+    case "Gift": return "gift"
+    case "Stars": return "star"
+    case "Share": return "square.and.arrow.up"
+    case "Message": return "bubble.left"
+    case "ReadAll", "MarkAsRead": return "checkmark.circle"
+    case "VoiceChat": return "waveform"
+    case "AddMusic": return "music.note"
+    case "Apps": return "square.grid.2x2"
+    case "FaceId": return "faceid"
+    case "AlignBottom": return "rectangle.bottomthird.inset.filled"
+    case "ApplyTheme": return "paintpalette"
+    case "Channels": return "megaphone"
+    case "Groups": return "person.2"
+    case "Replies": return "arrowshape.turn.up.left"
+    case "Translate": return "character.bubble"
+    case "Browser": return "safari"
+    case "List": return "list.bullet"
+    case "Image": return "photo"
+    case "ReadingList": return "bookmark"
+    case "Call": return "phone"
+    default: return "circle"
     }
 }
 
@@ -102,10 +156,19 @@ func ggSettingsHeaderMark(theme: PresentationTheme) -> UIImage? {
 private let ggBrandColors: [UIColor] = [UIColor(rgb: 0x5B5B66), UIColor(rgb: 0x1F1F24)]
 
 private func ggRenderMenuIcon(_ icon: GGMenuIcon, color: UIColor) -> UIImage? {
-    let tinted: UIImage?
+    var tinted: UIImage?
     switch icon {
     case let .bundle(name):
-        tinted = generateTintedImage(image: UIImage(bundleImageName: name), color: color)
+        if let rawImage = UIImage(bundleImageName: name) {
+            tinted = generateTintedImage(image: rawImage, color: color)
+        }
+        if tinted == nil, let fallbackName = ggFallbackSystemName(for: name) {
+            let configuration = UIImage.SymbolConfiguration(pointSize: 18.0, weight: .regular)
+            tinted = UIImage(systemName: fallbackName, withConfiguration: configuration)?.withTintColor(color, renderingMode: .alwaysOriginal)
+        }
+        if tinted == nil {
+            tinted = ggVectorGhost(size: ggMenuIconSize, color: color)
+        }
     case let .system(name):
         let configuration = UIImage.SymbolConfiguration(pointSize: 18.0, weight: .regular)
         tinted = UIImage(systemName: name, withConfiguration: configuration)?.withTintColor(color, renderingMode: .alwaysOriginal)
@@ -116,7 +179,7 @@ private func ggRenderMenuIcon(_ icon: GGMenuIcon, color: UIColor) -> UIImage? {
             tinted = ggVectorGhost(size: ggMenuIconSize, color: color)
         }
     }
-    guard let tinted else {
+    guard let tinted = tinted ?? ggVectorGhost(size: ggMenuIconSize, color: color) else {
         return nil
     }
     if tinted.size == ggMenuIconSize {

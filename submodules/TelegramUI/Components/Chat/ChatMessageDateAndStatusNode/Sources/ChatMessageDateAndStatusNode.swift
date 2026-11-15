@@ -757,7 +757,7 @@ public class ChatMessageDateAndStatusNode: ASDisplayNode {
                         clockFrameNode = nil
                         clockMinNode = nil
                         
-                        let checkSize = loadedCheckFullImage!.size
+                        let checkSize = loadedCheckFullImage?.size ?? CGSize(width: 11.0, height: 11.0)
                         
                         if read {
                             checkReadFrame = CGRect(origin: CGPoint(x: leftInset + impressionWidth + date.size.width + 5.0 + statusWidth - checkSize.width, y: 3.0 + offset), size: checkSize)
