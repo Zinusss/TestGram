@@ -7,11 +7,11 @@ import AppBundle
 private let defaultFont = UIFont.systemFont(ofSize: 15.0)
 
 private let quoteIcon: UIImage = {
-    return UIImage(bundleImageName: "Chat/Message/ReplyQuoteIcon")!.precomposed()
+    return (UIImage(bundleImageName: "Chat/Message/ReplyQuoteIcon") ?? UIImage()).precomposed()
 }()
 
 private let codeIcon: UIImage = {
-    return UIImage(bundleImageName: "Chat/Message/TextCodeIcon")!.precomposed()
+    return (UIImage(bundleImageName: "Chat/Message/TextCodeIcon") ?? UIImage()).precomposed()
 }()
 
 private final class TextNodeStrikethrough {
