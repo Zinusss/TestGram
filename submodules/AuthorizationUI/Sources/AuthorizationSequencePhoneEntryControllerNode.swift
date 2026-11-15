@@ -725,13 +725,8 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
                 self.managedAnimationNode.isHidden = true
             }
             
-            let isKeyboardActive = (layout.inputHeight ?? 0.0) > 0.0
-            if !isKeyboardActive {
-                self.qrLoginButton.isHidden = false
-                items.append(AuthorizationLayoutItem(node: self.qrLoginButton, size: CGSize(width: maximumWidth, height: 44.0), spacingBefore: AuthorizationLayoutItemSpacing(weight: 16.0, maxValue: 24.0), spacingAfter: AuthorizationLayoutItemSpacing(weight: 0.0, maxValue: 0.0)))
-            } else {
-                self.qrLoginButton.isHidden = true
-            }
+            self.qrLoginButton.isHidden = false
+            items.append(AuthorizationLayoutItem(node: self.qrLoginButton, size: CGSize(width: maximumWidth, height: 44.0), spacingBefore: AuthorizationLayoutItemSpacing(weight: 12.0, maxValue: 18.0), spacingAfter: AuthorizationLayoutItemSpacing(weight: 0.0, maxValue: 0.0)))
             
             let contactSyncSize = self.contactSyncNode.updateLayout(width: maximumWidth)
             if self.hasOtherAccounts {
@@ -801,6 +796,7 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
     }
     
     @objc private func qrLoginButtonPressed() {
+        self.view.endEditing(true)
         self.setQrMode(true)
     }
     
@@ -810,6 +806,7 @@ final class AuthorizationSequencePhoneEntryControllerNode: ASDisplayNode {
         }
         self.isQrMode = enabled
         if enabled {
+            self.view.endEditing(true)
             self.qrImageNode.image = nil
             self.qrActivityIndicator.startAnimating()
             self.refreshQrToken()

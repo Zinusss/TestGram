@@ -121,16 +121,14 @@ public final class AuthorizationSequencePhoneEntryController: ViewController, MF
         let isUkrainian = self.presentationData.strings.primaryComponent.languageCode.lowercased().hasPrefix("uk")
         if self.controllerNode.isQrMode {
             let title = isUkrainian ? "Телефон" : "Phone"
-            self.navigationItem.rightBarButtonItem = UIBarButtonItem(title: title, style: .plain, target: self, action: #selector(self.toggleQrModePressed))
+            let item = UIBarButtonItem(title: title, style: .plain, target: self, action: #selector(self.toggleQrModePressed))
+            item.tintColor = self.presentationData.theme.rootController.navigationBar.accentTextColor
+            self.navigationItem.rightBarButtonItem = item
         } else {
-            if let layout = self.validLayout, layout.size.width < 360.0 {
-                self.navigationItem.rightBarButtonItem = UIBarButtonItem(title: self.presentationData.strings.Common_Next, style: .done, target: self, action: #selector(self.nextPressed))
-            } else if let qrImage = PresentationResourcesRootController.navigationQrCodeIcon(self.presentationData.theme) {
-                self.navigationItem.rightBarButtonItem = UIBarButtonItem(image: qrImage, style: .plain, target: self, action: #selector(self.toggleQrModePressed))
-            } else {
-                let title = isUkrainian ? "QR-код" : "QR Code"
-                self.navigationItem.rightBarButtonItem = UIBarButtonItem(title: title, style: .plain, target: self, action: #selector(self.toggleQrModePressed))
-            }
+            let title = isUkrainian ? "Вхід за QR" : "QR Login"
+            let item = UIBarButtonItem(title: title, style: .done, target: self, action: #selector(self.toggleQrModePressed))
+            item.tintColor = self.presentationData.theme.rootController.navigationBar.accentTextColor
+            self.navigationItem.rightBarButtonItem = item
         }
     }
     
