@@ -5182,7 +5182,7 @@ extension ChatControllerImpl {
                                     UndoOverlayController(
                                         presentationData: self.presentationData,
                                         content: .universalImage(
-                                            image: generateTintedImage(image: UIImage(bundleImageName: "Chat/ToastImprovingVideo"), color: .white)!,
+                                            image: generateTintedImage(image: UIImage(bundleImageName: "Chat/ToastImprovingVideo") ?? UIImage(systemName: "video"), color: .white) ?? UIImage(),
                                             size: nil,
                                             title: self.presentationData.strings.Chat_ToastImprovingVideo_Title,
                                             text: self.presentationData.strings.Chat_ToastImprovingVideo_Text,

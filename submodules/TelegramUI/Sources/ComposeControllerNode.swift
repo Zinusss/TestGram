@@ -41,14 +41,18 @@ final class ComposeControllerNode: ASDisplayNode {
         var openCreateContactImpl: (() -> Void)?
         var openCreateNewChannelImpl: (() -> Void)?
         
+        let createGroupIcon = UIImage(bundleImageName: "Contact List/CreateGroupActionIcon") ?? UIImage(systemName: "person.2")
+        let addMemberIcon = UIImage(bundleImageName: "Contact List/AddMemberIcon") ?? UIImage(systemName: "person.badge.plus")
+        let createChannelIcon = UIImage(bundleImageName: "Contact List/CreateChannelActionIcon") ?? UIImage(systemName: "megaphone")
+        
         self.contactListNode = ContactListNode(context: context, presentation: .single(.natural(options: [
-            ContactListAdditionalOption(title: self.presentationData.strings.Compose_NewGroup, icon: .generic(UIImage(bundleImageName: "Contact List/CreateGroupActionIcon")!), action: {
+            ContactListAdditionalOption(title: self.presentationData.strings.Compose_NewGroup, icon: createGroupIcon.map(ContactListActionItemIcon.generic) ?? .none, action: {
                 openCreateNewGroupImpl?()
             }),
-            ContactListAdditionalOption(title: self.presentationData.strings.NewContact_Title, icon: .generic(UIImage(bundleImageName: "Contact List/AddMemberIcon")!), action: {
+            ContactListAdditionalOption(title: self.presentationData.strings.NewContact_Title, icon: addMemberIcon.map(ContactListActionItemIcon.generic) ?? .none, action: {
                 openCreateContactImpl?()
             }),
-            ContactListAdditionalOption(title: self.presentationData.strings.Compose_NewChannel, icon: .generic(UIImage(bundleImageName: "Contact List/CreateChannelActionIcon")!), action: {
+            ContactListAdditionalOption(title: self.presentationData.strings.Compose_NewChannel, icon: createChannelIcon.map(ContactListActionItemIcon.generic) ?? .none, action: {
                 openCreateNewChannelImpl?()
             })
         ], includeChatList: false, topPeers: .none)), onlyWriteable: false, isGroupInvitation: false, displayPermissionPlaceholder: false)

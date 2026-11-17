@@ -4,11 +4,30 @@ import AudioToolbox
 import AppBundle
 
 private func loadSystemSoundFromBundle(name: String) -> SystemSoundID? {
-    let path = "\(getAppBundle().resourcePath!)/\(name)"
-    let url = URL(fileURLWithPath: path)
-    var sound: SystemSoundID = 0
-    if AudioServicesCreateSystemSoundID(url as CFURL, &sound) == noErr {
-        return sound
+    let bundle = getAppBundle()
+    let mainBundle = Bundle.main
+    var url: URL?
+    
+    if let path = bundle.path(forResource: name, ofType: nil) {
+        url = URL(fileURLWithPath: path)
+    } else if let path = mainBundle.path(forResource: name, ofType: nil) {
+        url = URL(fileURLWithPath: path)
+    } else if let path = bundle.path(forResource: "Sounds/\(name)", ofType: nil) ?? mainBundle.path(forResource: "Sounds/\(name)", ofType: nil) {
+        url = URL(fileURLWithPath: path)
+    } else {
+        for fb in Bundle.allFrameworks {
+            if let path = fb.path(forResource: name, ofType: nil) ?? fb.path(forResource: "Sounds/\(name)", ofType: nil) {
+                url = URL(fileURLWithPath: path)
+                break
+            }
+        }
+    }
+    
+    if let url = url {
+        var sound: SystemSoundID = 0
+        if AudioServicesCreateSystemSoundID(url as CFURL, &sound) == noErr {
+            return sound
+        }
     }
     return nil
 }

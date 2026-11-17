@@ -500,7 +500,8 @@ public final class CallController: ViewController {
         var options: [ContactListAdditionalOption] = []
         var openShareLinkImpl: (() -> Void)?
         if shareLink != nil {
-            options.append(ContactListAdditionalOption(title: presentationData.strings.Call_ShareLink, icon: .generic(UIImage(bundleImageName: "Contact List/LinkActionIcon")!), action: {
+            let linkIcon = UIImage(bundleImageName: "Contact List/LinkActionIcon") ?? UIImage(systemName: "link")
+            options.append(ContactListAdditionalOption(title: presentationData.strings.Call_ShareLink, icon: linkIcon.map(ContactListActionItemIcon.generic) ?? .none, action: {
                 openShareLinkImpl?()
             }, clearHighlightAutomatically: false))
         }

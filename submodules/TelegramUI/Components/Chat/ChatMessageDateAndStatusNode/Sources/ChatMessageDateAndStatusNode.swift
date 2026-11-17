@@ -1325,11 +1325,15 @@ public class ChatMessageDateAndStatusNode: ASDisplayNode {
                             if animateReadNode {
                                 strongSelf.checkReadNode?.layer.animateScale(from: 1.3, to: 1.0, duration: 0.1)
                             }
-                        } else if let checkSentNode = strongSelf.checkSentNode, let checkReadNode = strongSelf.checkReadNode {
-                            checkSentNode.removeFromSupernode()
-                            checkReadNode.removeFromSupernode()
-                            strongSelf.checkSentNode = nil
-                            strongSelf.checkReadNode = nil
+                        } else {
+                            if let checkSentNode = strongSelf.checkSentNode {
+                                checkSentNode.removeFromSupernode()
+                                strongSelf.checkSentNode = nil
+                            }
+                            if let checkReadNode = strongSelf.checkReadNode {
+                                checkReadNode.removeFromSupernode()
+                                strongSelf.checkReadNode = nil
+                            }
                         }
                         
                         var reactionOffset: CGFloat = leftOffset + leftInset - reactionInset + backgroundInsets.left

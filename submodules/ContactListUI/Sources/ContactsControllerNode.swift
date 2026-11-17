@@ -100,7 +100,8 @@ final class ContactsControllerNode: ASDisplayNode, ASGestureRecognizerDelegate {
         
         let presentation = combineLatest(sortOrder, self.stringsPromise.get())
         |> map { sortOrder, strings -> ContactListPresentation in
-            let options = [ContactListAdditionalOption(title: strings.Contacts_InviteFriends, icon: .generic(UIImage(bundleImageName: "Contact List/AddMemberIcon")!), action: {
+            let addIcon = UIImage(bundleImageName: "Contact List/AddMemberIcon") ?? UIImage(systemName: "person.badge.plus")
+            let options = [ContactListAdditionalOption(title: strings.Contacts_InviteFriends, icon: addIcon.map(ContactListActionItemIcon.generic) ?? .none, action: {
                 inviteImpl?()
             })]
             switch sortOrder {

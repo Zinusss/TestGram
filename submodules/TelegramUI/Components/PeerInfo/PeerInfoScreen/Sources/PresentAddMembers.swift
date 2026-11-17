@@ -50,7 +50,8 @@ public func presentAddMembersImpl(context: AccountContext, updatedPresentationDa
         }
         
         if canCreateInviteLink {
-            options.append(ContactListAdditionalOption(title: presentationData.strings.GroupInfo_InviteByLink, icon: .generic(UIImage(bundleImageName: "Contact List/LinkActionIcon")!), action: {
+            let linkIcon = UIImage(bundleImageName: "Contact List/LinkActionIcon") ?? UIImage(systemName: "link")
+            options.append(ContactListAdditionalOption(title: presentationData.strings.GroupInfo_InviteByLink, icon: linkIcon.map(ContactListActionItemIcon.generic) ?? .none, action: {
                 createInviteLinkImpl?()
             }, clearHighlightAutomatically: true))
         }

@@ -16,6 +16,9 @@ enum GGGhostExplicitReads {
     /// Reads the chat (or the forum topic / monoforum thread) on the server up to `maxId`, and records it.
     /// `maxTimestamp` reads a secret chat up to that date (0 = up to its newest message).
     static func readHistory(account: Account, peerId: PeerId, threadId: Int64?, maxId: Int32, maxTimestamp: Int32 = 0) -> Signal<Bool, NoError> {
+        if maxId <= 0 && peerId.namespace != Namespaces.Peer.SecretChat {
+            return .single(false)
+        }
         let accountId = account.id.gg
         let key = peerId.ggGhostReadKey(threadId: threadId)
         return account.postbox.transaction { transaction -> (Peer?, Peer?, Int32) in

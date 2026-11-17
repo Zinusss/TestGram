@@ -206,7 +206,7 @@ enum GGGhostChatTracking {
         let engine = TelegramEngine(account: account)
         let _ = (account.postbox.transaction { transaction -> (MessageIndex?, Int64?) in
             var threadId: Int64?
-            if let threadFrom = threadFrom, let peer = transaction.getPeer(peerId), peer.isForumOrMonoForum {
+            if let threadFrom = threadFrom, threadFrom.id > 0, let peer = transaction.getPeer(peerId), peer.isForumOrMonoForum {
                 threadId = transaction.getMessage(threadFrom)?.threadId
             }
             if let messageId = messageId {
@@ -221,7 +221,7 @@ enum GGGhostChatTracking {
             return (transaction.getTopPeerMessageIndex(peerId: peerId, namespace: Namespaces.Message.Cloud), nil)
         }
         |> mapToSignal { index, threadId -> Signal<Never, NoError> in
-            guard let index = index else {
+            guard let index = index, index.id.id > 0 else {
                 return .complete()
             }
             let local: Signal<Never, NoError>

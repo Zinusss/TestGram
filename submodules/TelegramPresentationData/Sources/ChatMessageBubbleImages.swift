@@ -14,7 +14,7 @@ public enum MessageBubbleImageNeighbors {
 
 public func messageSingleBubbleLikeImage(fillColor: UIColor, strokeColor: UIColor) -> UIImage {
     let diameter: CGFloat = 36.0
-    return generateImage(CGSize(width: 36.0, height: diameter), contextGenerator: { size, context in
+    return (generateImage(CGSize(width: 36.0, height: diameter), contextGenerator: { size, context in
         context.clear(CGRect(origin: CGPoint(), size: size))
         
         let lineWidth: CGFloat = 0.5
@@ -23,7 +23,7 @@ public func messageSingleBubbleLikeImage(fillColor: UIColor, strokeColor: UIColo
         context.fillEllipse(in: CGRect(origin: CGPoint(), size: size))
         context.setFillColor(fillColor.cgColor)
         context.fillEllipse(in: CGRect(origin: CGPoint(x: lineWidth, y: lineWidth), size: CGSize(width: size.width - lineWidth * 2.0, height: size.height - lineWidth * 2.0)))
-    })!.stretchableImage(withLeftCapWidth: Int(diameter / 2.0), topCapHeight: Int(diameter / 2.0))
+    }) ?? UIImage()).stretchableImage(withLeftCapWidth: Int(diameter / 2.0), topCapHeight: Int(diameter / 2.0))
 }
 
 private let minRadiusForFullTailCorner: CGFloat = 14.0
@@ -32,7 +32,9 @@ func mediaBubbleCornerImage(incoming: Bool, radius: CGFloat, inset: CGFloat) -> 
     let imageSize = CGSize(width: radius + 7.0, height: 8.0)
     let fixedMainDiameter: CGFloat = 33.0
     
-    let formContext = DrawingContext(size: imageSize)!
+    guard let formContext = DrawingContext(size: imageSize) else {
+        return UIImage()
+    }
     formContext.withFlippedContext { context in
         context.clear(CGRect(origin: CGPoint(), size: imageSize))
         context.translateBy(x: imageSize.width / 2.0, y: imageSize.height / 2.0)
@@ -76,7 +78,7 @@ func mediaBubbleCornerImage(incoming: Bool, radius: CGFloat, inset: CGFloat) -> 
         context.fillEllipse(in: topEllipse)
     }
     
-    return formContext.generateImage()!
+    return formContext.generateImage() ?? UIImage()
 }
 
 public func messageBubbleImage(maxCornerRadius: CGFloat, minCornerRadius: CGFloat, incoming: Bool, fillColor: UIColor, strokeColor: UIColor, neighbors: MessageBubbleImageNeighbors, theme: PresentationThemeChat, wallpaper: TelegramWallpaper, knockout knockoutValue: Bool, mask: Bool = false, extendedEdges: Bool = false, onlyOutline: Bool = false, onlyShadow: Bool = false, alwaysFillColor: Bool = false) -> UIImage {
@@ -241,9 +243,13 @@ public func messageBubbleImage(maxCornerRadius: CGFloat, minCornerRadius: CGFloa
             context.fillEllipse(in: topEllipse)
         }
     }
-    let formImage = formContext.generateImage()!
+    guard let formImage = formContext.generateImage(), let formCgImage = formImage.cgImage else {
+        return UIImage()
+    }
     
-    let outlineContext = DrawingContext(size: imageSize)!
+    guard let outlineContext = DrawingContext(size: imageSize) else {
+        return UIImage()
+    }
     outlineContext.withFlippedContext { context in
         context.clear(CGRect(origin: CGPoint(), size: rawSize))
         context.translateBy(x: additionalInset + strokeInset, y: additionalInset + strokeInset)
@@ -343,25 +349,32 @@ public func messageBubbleImage(maxCornerRadius: CGFloat, minCornerRadius: CGFloa
                         context.fill(CGRect(origin: CGPoint(x: 1.0 - borderOffset, y: 1.0 - borderOffset), size: CGSize(width: outlineBottomEllipse.width, height: outlineBottomEllipse.height)))
                     }
                     context.clear(CGRect(origin: CGPoint(), size: CGSize(width: size.width, height: size.height / 2.0)))
-                })!
+                })
                 
-                context.clip(to: bottomEllipse.insetBy(dx: -1.0, dy: -1.0), mask: bottomEllipseMask.cgImage!)
-                context.strokeEllipse(in: outlineInnerTopEllipse)
-                context.resetClip()
+                if let bottomEllipseMask = bottomEllipseMask, let maskCgImage = bottomEllipseMask.cgImage {
+                    context.clip(to: bottomEllipse.insetBy(dx: -1.0, dy: -1.0), mask: maskCgImage)
+                    context.strokeEllipse(in: outlineInnerTopEllipse)
+                    context.resetClip()
+                }
             }
             
-            context.translateBy(x: -(additionalInset + strokeInset), y: -(additionalInset + strokeInset))
-            context.draw(bubbleTailContext.generateImage()!.cgImage!, in: CGRect(origin: CGPoint(), size: rawSize))
-            context.translateBy(x: additionalInset + strokeInset, y: additionalInset + strokeInset)
+            if let bubbleTailImage = bubbleTailContext.generateImage(), let tailCgImage = bubbleTailImage.cgImage {
+                context.translateBy(x: -(additionalInset + strokeInset), y: -(additionalInset + strokeInset))
+                context.draw(tailCgImage, in: CGRect(origin: CGPoint(), size: rawSize))
+                context.translateBy(x: additionalInset + strokeInset, y: additionalInset + strokeInset)
+            }
         }
     }
     let outlineImage = generateImage(outlineContext.size, contextGenerator: { size, context in
         context.setBlendMode(.copy)
-        let image = outlineContext.generateImage()!
-        context.draw(image.cgImage!, in: CGRect(origin: CGPoint(), size: size))
-    })!
+        if let image = outlineContext.generateImage(), let cgImage = image.cgImage {
+            context.draw(cgImage, in: CGRect(origin: CGPoint(), size: size))
+        }
+    })
     
-    let drawingContext = DrawingContext(size: imageSize)!
+    guard let drawingContext = DrawingContext(size: imageSize) else {
+        return UIImage()
+    }
     drawingContext.withFlippedContext { context in
         if onlyShadow {
             context.clear(CGRect(origin: CGPoint(), size: rawSize))
@@ -372,11 +385,11 @@ public func messageBubbleImage(maxCornerRadius: CGFloat, minCornerRadius: CGFloa
                 context.translateBy(x: -rawSize.width / 2.0, y: -rawSize.height / 2.0)
                 
                 context.setShadow(offset: CGSize(width: 0.0, height: -shadow.verticalOffset), blur: shadow.radius, color: shadow.color.cgColor)
-                context.draw(formImage.cgImage!, in: CGRect(origin: CGPoint(), size: rawSize))
+                context.draw(formCgImage, in: CGRect(origin: CGPoint(), size: rawSize))
                 
                 context.setBlendMode(.copy)
                 context.setFillColor(UIColor.clear.cgColor)
-                context.clip(to: CGRect(origin: CGPoint(), size: rawSize), mask: formImage.cgImage!)
+                context.clip(to: CGRect(origin: CGPoint(), size: rawSize), mask: formCgImage)
                 context.fill(CGRect(origin: CGPoint(), size: rawSize))
             }
         } else {
@@ -409,7 +422,7 @@ public func messageBubbleImage(maxCornerRadius: CGFloat, minCornerRadius: CGFloa
             context.translateBy(x: -rawSize.width / 2.0, y: -rawSize.height / 2.0)
             
             if !onlyOutline {
-                context.clip(to: CGRect(origin: CGPoint(), size: rawSize), mask: formImage.cgImage!)
+                context.clip(to: CGRect(origin: CGPoint(), size: rawSize), mask: formCgImage)
                 context.fill(CGRect(origin: CGPoint(), size: rawSize))
                 
                 if alwaysFillColor && drawWithClearColor {
@@ -417,9 +430,9 @@ public func messageBubbleImage(maxCornerRadius: CGFloat, minCornerRadius: CGFloa
                     context.setFillColor(fillColor.cgColor)
                     context.fill(CGRect(origin: CGPoint(), size: rawSize))
                 }
-            } else {
+            } else if let outlineCgImage = outlineImage?.cgImage {
                 context.setFillColor(strokeColor.cgColor)
-                context.clip(to: CGRect(origin: CGPoint(), size: rawSize), mask: outlineImage.cgImage!)
+                context.clip(to: CGRect(origin: CGPoint(), size: rawSize), mask: outlineCgImage)
                 context.fill(CGRect(origin: CGPoint(), size: rawSize))
             }
             
@@ -427,7 +440,7 @@ public func messageBubbleImage(maxCornerRadius: CGFloat, minCornerRadius: CGFloa
         }
     }
     
-    return drawingContext.generateImage()!.stretchableImage(withLeftCapWidth: incoming ? incomingStretchPoint.x : outgoingStretchPoint.x, topCapHeight: incoming ? incomingStretchPoint.y : outgoingStretchPoint.y)
+    return drawingContext.generateImage()?.stretchableImage(withLeftCapWidth: incoming ? incomingStretchPoint.x : outgoingStretchPoint.x, topCapHeight: incoming ? incomingStretchPoint.y : outgoingStretchPoint.y) ?? UIImage()
 }
 
 public enum MessageBubbleActionButtonPosition {

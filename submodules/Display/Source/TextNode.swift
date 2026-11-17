@@ -7,11 +7,11 @@ import AppBundle
 private let defaultFont = UIFont.systemFont(ofSize: 15.0)
 
 private let quoteIcon: UIImage = {
-    return (UIImage(bundleImageName: "Chat/Message/ReplyQuoteIcon") ?? UIImage()).precomposed()
+    return (UIImage(bundleImageName: "Chat/Message/ReplyQuoteIcon") ?? UIImage(systemName: "quote.opening") ?? UIImage()).precomposed()
 }()
 
 private let codeIcon: UIImage = {
-    return (UIImage(bundleImageName: "Chat/Message/TextCodeIcon") ?? UIImage()).precomposed()
+    return (UIImage(bundleImageName: "Chat/Message/TextCodeIcon") ?? UIImage(systemName: "chevron.left.forwardslash.chevron.right") ?? UIImage()).precomposed()
 }()
 
 private final class TextNodeStrikethrough {
@@ -2436,7 +2436,6 @@ open class TextNode: ASDisplayNode, TextNodeProtocol {
                             context.clip(to: quoteRect, mask: cgImage)
                             context.fill(quoteRect)
                             context.restoreGState()
-                            context.resetClip()
                         } else {
                             UIGraphicsPushContext(context)
                             quoteIcon.withRenderingMode(.alwaysTemplate).draw(in: quoteRect)
@@ -2454,7 +2453,6 @@ open class TextNode: ASDisplayNode, TextNodeProtocol {
                             context.clip(to: quoteRect, mask: cgImage)
                             context.fill(quoteRect)
                             context.restoreGState()
-                            context.resetClip()
                         } else {
                             UIGraphicsPushContext(context)
                             codeIcon.withRenderingMode(.alwaysTemplate).draw(in: quoteRect)

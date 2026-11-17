@@ -168,13 +168,15 @@ public struct PresentationResourcesItemList {
     
     public static func linkIcon(_ theme: PresentationTheme) -> UIImage? {
         return theme.image(PresentationResourceKey.itemListLinkIcon.rawValue, { theme in
-            return generateTintedImage(image: UIImage(bundleImageName: "Contact List/LinkActionIcon"), color: theme.list.itemAccentColor)
+            let image = UIImage(bundleImageName: "Contact List/LinkActionIcon") ?? UIImage(systemName: "link")
+            return generateTintedImage(image: image, color: theme.list.itemAccentColor)
         })
     }
     
     public static func addPersonIcon(_ theme: PresentationTheme) -> UIImage? {
         return theme.image(PresentationResourceKey.itemListAddPersonIcon.rawValue, { theme in
-            return generateTintedImage(image: UIImage(bundleImageName: "Contact List/AddMemberIcon"), color: theme.list.itemAccentColor)
+            let image = UIImage(bundleImageName: "Contact List/AddMemberIcon") ?? UIImage(systemName: "person.badge.plus")
+            return generateTintedImage(image: image, color: theme.list.itemAccentColor)
         })
     }
     

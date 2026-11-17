@@ -364,9 +364,9 @@ public class ChatMessageBackground: ASDisplayNode {
             }
         } else if transition.isAnimated, let imageView = self.imageView {
             if let previousContents = imageView.layer.contents {
-                if let image = image {
-                    if (previousContents as AnyObject) !== image.cgImage {
-                        imageView.layer.animate(from: previousContents as AnyObject, to: image.cgImage! as AnyObject, keyPath: "contents", timingFunction: CAMediaTimingFunctionName.easeInEaseOut.rawValue, duration: 0.42)
+                if let image = image, let toCgImage = image.cgImage {
+                    if (previousContents as AnyObject) !== toCgImage {
+                        imageView.layer.animate(from: previousContents as AnyObject, to: toCgImage as AnyObject, keyPath: "contents", timingFunction: CAMediaTimingFunctionName.easeInEaseOut.rawValue, duration: 0.42)
                     }
                 } else {
                     let tempLayer = CALayer()

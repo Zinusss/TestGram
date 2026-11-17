@@ -587,7 +587,7 @@ public final class CallListController: TelegramBaseController {
 
         var dismissSelectionController: (() -> Void)?
         
-        let options = [ContactListAdditionalOption(title: self.presentationData.strings.CallList_NewCallLink, icon: .generic(PresentationResourcesItemList.linkIcon(presentationData.theme)!), action: { [weak self] in
+        let options = [ContactListAdditionalOption(title: self.presentationData.strings.CallList_NewCallLink, icon: PresentationResourcesItemList.linkIcon(presentationData.theme).map(ContactListActionItemIcon.generic) ?? .none, action: { [weak self] in
             guard let self else {
                 return
             }

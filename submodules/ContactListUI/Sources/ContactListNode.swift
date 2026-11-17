@@ -24,18 +24,19 @@ import PhoneNumberFormat
 import LocalizedPeerData
 import ContextUI
 
-private let dropDownIcon = { () -> UIImage in
+private let dropDownIcon: UIImage = {
     UIGraphicsBeginImageContextWithOptions(CGSize(width: 12.0, height: 12.0), false, 0.0)
-    let context = UIGraphicsGetCurrentContext()!
+    defer { UIGraphicsEndImageContext() }
+    guard let context = UIGraphicsGetCurrentContext() else {
+        return UIImage()
+    }
     context.setBlendMode(.copy)
     context.setFillColor(UIColor.black.cgColor)
     context.move(to: CGPoint(x: 0.0, y: 3.0))
     context.addLine(to: CGPoint(x: 12.0, y: 3.0))
     context.addLine(to: CGPoint(x: 6.0, y: 9.0))
     context.fillPath()
-    let image = UIGraphicsGetImageFromCurrentImageContext()!
-    UIGraphicsEndImageContext()
-    return image
+    return UIGraphicsGetImageFromCurrentImageContext() ?? UIImage()
 }()
 
 private enum ContactListNodeEntrySection: Int {
