@@ -315,19 +315,20 @@ public struct PresentationResourcesChat {
         return theme.image(PresentationResourceKey.chatInputTextFieldBackgroundImage.rawValue, { theme in
             let diameter: CGFloat = 35.0
             UIGraphicsBeginImageContextWithOptions(CGSize(width: diameter, height: diameter), false, 0.0)
-            let context = UIGraphicsGetCurrentContext()!
-            context.setFillColor(theme.chat.inputPanel.panelBackgroundColor.cgColor)
-            context.fill(CGRect(x: 0.0, y: 0.0, width: diameter, height: diameter))
-            
-            context.setBlendMode(.clear)
-            context.setFillColor(UIColor.clear.cgColor)
-            context.fillEllipse(in: CGRect(x: 0.0, y: 0.0, width: diameter, height: diameter))
-            context.setBlendMode(.normal)
-            context.setStrokeColor(theme.chat.inputPanel.inputStrokeColor.cgColor)
-            let strokeWidth: CGFloat = 0.5
-            context.setLineWidth(strokeWidth)
-            context.strokeEllipse(in: CGRect(x: strokeWidth / 2.0, y: strokeWidth / 2.0, width: diameter - strokeWidth, height: diameter - strokeWidth))
-            let image = UIGraphicsGetImageFromCurrentImageContext()!.stretchableImage(withLeftCapWidth: Int(diameter / 2.0), topCapHeight: Int(diameter / 2.0))
+            if let context = UIGraphicsGetCurrentContext() {
+                context.setFillColor(theme.chat.inputPanel.panelBackgroundColor.cgColor)
+                context.fill(CGRect(x: 0.0, y: 0.0, width: diameter, height: diameter))
+                
+                context.setBlendMode(.clear)
+                context.setFillColor(UIColor.clear.cgColor)
+                context.fillEllipse(in: CGRect(x: 0.0, y: 0.0, width: diameter, height: diameter))
+                context.setBlendMode(.normal)
+                context.setStrokeColor(theme.chat.inputPanel.inputStrokeColor.cgColor)
+                let strokeWidth: CGFloat = 0.5
+                context.setLineWidth(strokeWidth)
+                context.strokeEllipse(in: CGRect(x: strokeWidth / 2.0, y: strokeWidth / 2.0, width: diameter - strokeWidth, height: diameter - strokeWidth))
+            }
+            let image = UIGraphicsGetImageFromCurrentImageContext()?.stretchableImage(withLeftCapWidth: Int(diameter / 2.0), topCapHeight: Int(diameter / 2.0))
             UIGraphicsEndImageContext()
             
             return image

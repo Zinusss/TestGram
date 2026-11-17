@@ -418,7 +418,7 @@ public func generateGradientTintedImage(image: UIImage?, colors: [UIColor], dire
         }
     }
     
-    let tintedImage = UIGraphicsGetImageFromCurrentImageContext()!
+    let tintedImage = UIGraphicsGetImageFromCurrentImageContext() ?? image
     UIGraphicsEndImageContext()
     
     return tintedImage
@@ -441,16 +441,16 @@ public func generateGradientImage(size: CGSize, scale: CGFloat = 0.0, colors: [U
         let colorSpace = DeviceGraphicsContextSettings.shared.colorSpace
         
         var locations = locations
-        let gradient = CGGradient(colorsSpace: colorSpace, colors: gradientColors, locations: &locations)!
-        
-        if isInverted {
-            context.drawLinearGradient(gradient, start: direction == .horizontal ? CGPoint(x: size.width, y: 0.0) : CGPoint(x: 0.0, y: size.height), end: CGPoint(x: 0.0, y: 0.0), options: CGGradientDrawingOptions())
-        } else {
-            context.drawLinearGradient(gradient, start: CGPoint(x: 0.0, y: 0.0), end: direction == .horizontal ? CGPoint(x: size.width, y: 0.0) : CGPoint(x: 0.0, y: size.height), options: CGGradientDrawingOptions())
+        if let gradient = CGGradient(colorsSpace: colorSpace, colors: gradientColors, locations: &locations) {
+            if isInverted {
+                context.drawLinearGradient(gradient, start: direction == .horizontal ? CGPoint(x: size.width, y: 0.0) : CGPoint(x: 0.0, y: size.height), end: CGPoint(x: 0.0, y: 0.0), options: CGGradientDrawingOptions())
+            } else {
+                context.drawLinearGradient(gradient, start: CGPoint(x: 0.0, y: 0.0), end: direction == .horizontal ? CGPoint(x: size.width, y: 0.0) : CGPoint(x: 0.0, y: size.height), options: CGGradientDrawingOptions())
+            }
         }
     }
     
-    let image = UIGraphicsGetImageFromCurrentImageContext()!
+    let image = UIGraphicsGetImageFromCurrentImageContext()
     UIGraphicsEndImageContext()
     
     return image
@@ -469,26 +469,26 @@ public func generateGradientFilledCircleImage(diameter: CGFloat, colors: NSArray
             locations.append(t)
         }
         let colorSpace = DeviceGraphicsContextSettings.shared.colorSpace
-        let gradient = CGGradient(colorsSpace: colorSpace, colors: colors, locations: &locations)!
-        
-        let start: CGPoint
-        let end: CGPoint
-        switch direction {
-        case .horizontal:
-            start = .zero
-            end = CGPoint(x: size.width, y: 0.0)
-        case .vertical:
-            start = .zero
-            end = CGPoint(x: 0.0, y: size.height)
-        case .diagonal:
-            start = CGPoint(x: 0.0, y: 0.0)
-            end = CGPoint(x: size.width, y: size.height)
-        case .mirroredDiagonal:
-            start = CGPoint(x: size.width, y: 0.0)
-            end = CGPoint(x: 0.0, y: size.height)
+        if let gradient = CGGradient(colorsSpace: colorSpace, colors: colors, locations: &locations) {
+            let start: CGPoint
+            let end: CGPoint
+            switch direction {
+            case .horizontal:
+                start = .zero
+                end = CGPoint(x: size.width, y: 0.0)
+            case .vertical:
+                start = CGPoint(x: 0.0, y: size.height)
+                end = .zero
+            case .diagonal:
+                start = CGPoint(x: 0.0, y: 0.0)
+                end = CGPoint(x: size.width, y: size.height)
+            case .mirroredDiagonal:
+                start = CGPoint(x: size.width, y: 0.0)
+                end = CGPoint(x: 0.0, y: size.height)
+            }
+            
+            context.drawLinearGradient(gradient, start: start, end: end, options: CGGradientDrawingOptions())
         }
-        
-        context.drawLinearGradient(gradient, start: start, end:end, options: CGGradientDrawingOptions())
     })
 }
 

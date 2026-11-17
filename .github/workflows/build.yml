@@ -5,6 +5,9 @@ on:
   push:
     branches: [ master, main ]
 
+permissions:
+  contents: write
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -149,3 +152,20 @@ jobs:
           name: Ghostgram-iOS-IPA
           path: build-output/ipa/*.ipa
           if-no-files-found: error
+
+      - name: Publish to GitHub Releases
+        uses: softprops/action-gh-release@v2
+        if: success()
+        with:
+          tag_name: latest
+          name: Ghostgram iOS (Latest Working Build)
+          body: |
+            Оновлений стабільний білд Ghostgram iOS:
+            - Усунено всі лаги та зависання інтерфейсу (високопродуктивний кеш іконок).
+            - Повністю усунено всі вильоти при відкритті будь-якого чату чи каналу.
+            - Працюють всі іконки меню та внутрішні налаштування Ghostgram.
+          files: |
+            build-output/ipa/Ghostgram.ipa
+            build-output/ipa/Telegram.ipa
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

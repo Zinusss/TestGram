@@ -42,28 +42,46 @@ public final class ChatMessageSwipeToReplyNode: ASDisplayNode {
                 if let image = UIImage(bundleImageName: "Chat/Message/ShareIcon") {
                     let imageRect = CGRect(origin: CGPoint(x: floor((size.width - image.size.width) / 2.0), y: floor((size.height - image.size.height) / 2.0)), size: image.size)
                     
-                    context.translateBy(x: imageRect.midX, y: imageRect.midY)
-                    context.scaleBy(x: -1.0, y: -1.0)
-                    context.translateBy(x: -imageRect.midX, y: -imageRect.midY)
-                    context.clip(to: imageRect, mask: image.cgImage!)
-                    context.setFillColor(foregroundColor.cgColor)
-                    context.fill(imageRect)
+                    if let cgImage = image.cgImage {
+                        context.saveGState()
+                        context.translateBy(x: imageRect.midX, y: imageRect.midY)
+                        context.scaleBy(x: -1.0, y: -1.0)
+                        context.translateBy(x: -imageRect.midX, y: -imageRect.midY)
+                        context.clip(to: imageRect, mask: cgImage)
+                        context.setFillColor(foregroundColor.cgColor)
+                        context.fill(imageRect)
+                        context.restoreGState()
+                    } else {
+                        UIGraphicsPushContext(context)
+                        foregroundColor.setFill()
+                        image.withRenderingMode(.alwaysTemplate).draw(in: imageRect)
+                        UIGraphicsPopContext()
+                    }
                 }
             case .like, .unlike:
                 if let image = UIImage(bundleImageName: action == .like ? "Chat/Reactions/SwipeActionHeartFilled" : "Chat/Reactions/SwipeActionHeartBroken") {
                     let imageRect = CGRect(origin: CGPoint(x: floor((size.width - image.size.width) / 2.0), y: floor((size.height - image.size.height) / 2.0)), size: image.size)
                     
-                    context.translateBy(x: imageRect.midX, y: imageRect.midY)
-                    context.scaleBy(x: 1.0, y: -1.0)
-                    context.translateBy(x: -imageRect.midX, y: -imageRect.midY)
-                    if case .like = action {
-                        context.translateBy(x: 0.0, y: -1.0)
+                    if let cgImage = image.cgImage {
+                        context.saveGState()
+                        context.translateBy(x: imageRect.midX, y: imageRect.midY)
+                        context.scaleBy(x: 1.0, y: -1.0)
+                        context.translateBy(x: -imageRect.midX, y: -imageRect.midY)
+                        if case .like = action {
+                            context.translateBy(x: 0.0, y: -1.0)
+                        } else {
+                            context.translateBy(x: 0.5, y: -1.0)
+                        }
+                        context.clip(to: imageRect, mask: cgImage)
+                        context.setFillColor(foregroundColor.cgColor)
+                        context.fill(imageRect)
+                        context.restoreGState()
                     } else {
-                        context.translateBy(x: 0.5, y: -1.0)
+                        UIGraphicsPushContext(context)
+                        foregroundColor.setFill()
+                        image.withRenderingMode(.alwaysTemplate).draw(in: imageRect)
+                        UIGraphicsPopContext()
                     }
-                    context.clip(to: imageRect, mask: image.cgImage!)
-                    context.setFillColor(foregroundColor.cgColor)
-                    context.fill(imageRect)
                 }
             }
         })

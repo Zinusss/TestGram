@@ -236,9 +236,9 @@ public final class PrincipalThemeEssentialGraphics {
                 }
 
                 let colorSpace = deviceColorSpace
-                let gradient = CGGradient(colorsSpace: colorSpace, colors: colors as NSArray, locations: &locations)!
-
-                context.drawLinearGradient(gradient, start: CGPoint(), end: CGPoint(x: 0.0, y: size.height), options: CGGradientDrawingOptions())
+                if let gradient = CGGradient(colorsSpace: colorSpace, colors: colors as NSArray, locations: &locations) {
+                    context.drawLinearGradient(gradient, start: CGPoint(), end: CGPoint(x: 0.0, y: size.height), options: CGGradientDrawingOptions())
+                }
             })
         } else {
             self.incomingBubbleGradientImage = nil
@@ -260,9 +260,9 @@ public final class PrincipalThemeEssentialGraphics {
                 }
 
                 let colorSpace = deviceColorSpace
-                let gradient = CGGradient(colorsSpace: colorSpace, colors: colors as NSArray, locations: &locations)!
-
-                context.drawLinearGradient(gradient, start: CGPoint(), end: CGPoint(x: 0.0, y: size.height), options: CGGradientDrawingOptions())
+                if let gradient = CGGradient(colorsSpace: colorSpace, colors: colors as NSArray, locations: &locations) {
+                    context.drawLinearGradient(gradient, start: CGPoint(), end: CGPoint(x: 0.0, y: size.height), options: CGGradientDrawingOptions())
+                }
             })
         } else {
             self.outgoingBubbleGradientImage = nil

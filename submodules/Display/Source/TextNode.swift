@@ -2426,26 +2426,40 @@ open class TextNode: ASDisplayNode, TextNodeProtocol {
                 
                 switch blockQuote.data.kind {
                 case .quote:
-                    let quoteRect = CGRect(origin: CGPoint(x: blockFrame.maxX - 4.0 - quoteIcon.size.width, y: blockFrame.minY + 4.0), size: quoteIcon.size)
-                    context.saveGState()
-                    context.translateBy(x: quoteRect.midX, y: quoteRect.midY)
-                    context.scaleBy(x: 1.0, y: -1.0)
-                    context.translateBy(x: -quoteRect.midX, y: -quoteRect.midY)
-                    context.clip(to: quoteRect, mask: quoteIcon.cgImage!)
-                    context.fill(quoteRect)
-                    context.restoreGState()
-                    context.resetClip()
+                    if quoteIcon.size.width > 0.0 && quoteIcon.size.height > 0.0 {
+                        let quoteRect = CGRect(origin: CGPoint(x: blockFrame.maxX - 4.0 - quoteIcon.size.width, y: blockFrame.minY + 4.0), size: quoteIcon.size)
+                        if let cgImage = quoteIcon.cgImage {
+                            context.saveGState()
+                            context.translateBy(x: quoteRect.midX, y: quoteRect.midY)
+                            context.scaleBy(x: 1.0, y: -1.0)
+                            context.translateBy(x: -quoteRect.midX, y: -quoteRect.midY)
+                            context.clip(to: quoteRect, mask: cgImage)
+                            context.fill(quoteRect)
+                            context.restoreGState()
+                            context.resetClip()
+                        } else {
+                            UIGraphicsPushContext(context)
+                            quoteIcon.withRenderingMode(.alwaysTemplate).draw(in: quoteRect)
+                            UIGraphicsPopContext()
+                        }
+                    }
                 case .code:
-                    if blockQuote.data.title != nil {
+                    if blockQuote.data.title != nil && codeIcon.size.width > 0.0 && codeIcon.size.height > 0.0 {
                         let quoteRect = CGRect(origin: CGPoint(x: blockFrame.maxX - 4.0 - codeIcon.size.width, y: blockFrame.minY + 4.0), size: codeIcon.size)
-                        context.saveGState()
-                        context.translateBy(x: quoteRect.midX, y: quoteRect.midY)
-                        context.scaleBy(x: 1.0, y: -1.0)
-                        context.translateBy(x: -quoteRect.midX, y: -quoteRect.midY)
-                        context.clip(to: quoteRect, mask: codeIcon.cgImage!)
-                        context.fill(quoteRect)
-                        context.restoreGState()
-                        context.resetClip()
+                        if let cgImage = codeIcon.cgImage {
+                            context.saveGState()
+                            context.translateBy(x: quoteRect.midX, y: quoteRect.midY)
+                            context.scaleBy(x: 1.0, y: -1.0)
+                            context.translateBy(x: -quoteRect.midX, y: -quoteRect.midY)
+                            context.clip(to: quoteRect, mask: cgImage)
+                            context.fill(quoteRect)
+                            context.restoreGState()
+                            context.resetClip()
+                        } else {
+                            UIGraphicsPushContext(context)
+                            codeIcon.withRenderingMode(.alwaysTemplate).draw(in: quoteRect)
+                            UIGraphicsPopContext()
+                        }
                     }
                 }
                 

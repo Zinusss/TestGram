@@ -94,11 +94,19 @@ public func chatMessageBubbleImageContentCorners(relativeContentPosition positio
                             
                             switch status {
                                 case .Incoming:
-                                    bottomLeftCorner = .Tail(normalRadius, PresentationResourcesChat.chatBubbleMediaCorner(chatPresentationData.theme.theme, incoming: true, mainRadius: normalRadius, inset: max(0.0, bubbleInsets.left - 1.0))!)
+                                    if let cornerImage = PresentationResourcesChat.chatBubbleMediaCorner(chatPresentationData.theme.theme, incoming: true, mainRadius: normalRadius, inset: max(0.0, bubbleInsets.left - 1.0)) {
+                                        bottomLeftCorner = .Tail(normalRadius, cornerImage)
+                                    } else {
+                                        bottomLeftCorner = .Corner(normalRadius)
+                                    }
                                     bottomRightCorner = .Corner(normalRadius)
                                 case .Outgoing:
                                     bottomLeftCorner = .Corner(normalRadius)
-                                    bottomRightCorner = .Tail(normalRadius, PresentationResourcesChat.chatBubbleMediaCorner(chatPresentationData.theme.theme, incoming: false, mainRadius: normalRadius, inset: max(0.0, bubbleInsets.right - 1.0))!)
+                                    if let cornerImage = PresentationResourcesChat.chatBubbleMediaCorner(chatPresentationData.theme.theme, incoming: false, mainRadius: normalRadius, inset: max(0.0, bubbleInsets.right - 1.0)) {
+                                        bottomRightCorner = .Tail(normalRadius, cornerImage)
+                                    } else {
+                                        bottomRightCorner = .Corner(normalRadius)
+                                    }
                                 case .None:
                                     bottomLeftCorner = .Corner(normalRadius)
                                     bottomRightCorner = .Corner(normalRadius)
@@ -125,7 +133,11 @@ public func chatMessageBubbleImageContentCorners(relativeContentPosition positio
                             bubbleInsets = layoutConstants.image.bubbleInsets
                         }
                         
-                        bottomLeftCorner = .Tail(normalRadius, PresentationResourcesChat.chatBubbleMediaCorner(chatPresentationData.theme.theme, incoming: true, mainRadius: normalRadius, inset: max(0.0, bubbleInsets.left - 1.0))!)
+                        if let cornerImage = PresentationResourcesChat.chatBubbleMediaCorner(chatPresentationData.theme.theme, incoming: true, mainRadius: normalRadius, inset: max(0.0, bubbleInsets.left - 1.0)) {
+                            bottomLeftCorner = .Tail(normalRadius, cornerImage)
+                        } else {
+                            bottomLeftCorner = .Corner(normalRadius)
+                        }
                     } else {
                         bottomLeftCorner = .Corner(normalRadius)
                     }
@@ -149,7 +161,11 @@ public func chatMessageBubbleImageContentCorners(relativeContentPosition positio
                         } else {
                             bubbleInsets = layoutConstants.image.bubbleInsets
                         }
-                        bottomRightCorner = .Tail(normalRadius, PresentationResourcesChat.chatBubbleMediaCorner(chatPresentationData.theme.theme, incoming: false, mainRadius: normalRadius, inset: max(0.0, bubbleInsets.right - 1.0))!)
+                        if let cornerImage = PresentationResourcesChat.chatBubbleMediaCorner(chatPresentationData.theme.theme, incoming: false, mainRadius: normalRadius, inset: max(0.0, bubbleInsets.right - 1.0)) {
+                            bottomRightCorner = .Tail(normalRadius, cornerImage)
+                        } else {
+                            bottomRightCorner = .Corner(normalRadius)
+                        }
                     } else {
                         bottomRightCorner = .Corner(normalRadius)
                     }

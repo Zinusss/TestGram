@@ -103,13 +103,19 @@ public func addCorners(_ context: DrawingContext, arguments: TransformImageArgum
                     c.fill(CGRect(x: 0.0, y: drawingRect.maxY - 7.0, width: 4.0, height: 7.0))
                     c.setBlendMode(.destinationIn)
                     let cornerRect = CGRect(origin: CGPoint(x: drawingRect.minX - 6.0, y: drawingRect.maxY - image.size.height), size: image.size)
-                    c.translateBy(x: cornerRect.midX, y: cornerRect.midY)
-                    c.scaleBy(x: 1.0, y: -1.0)
-                    c.translateBy(x: -cornerRect.midX, y: -cornerRect.midY)
-                    c.draw(image.cgImage!, in: cornerRect)
-                    c.translateBy(x: cornerRect.midX, y: cornerRect.midY)
-                    c.scaleBy(x: 1.0, y: -1.0)
-                    c.translateBy(x: -cornerRect.midX, y: -cornerRect.midY)
+                    if let cgImage = image.cgImage {
+                        c.translateBy(x: cornerRect.midX, y: cornerRect.midY)
+                        c.scaleBy(x: 1.0, y: -1.0)
+                        c.translateBy(x: -cornerRect.midX, y: -cornerRect.midY)
+                        c.draw(cgImage, in: cornerRect)
+                        c.translateBy(x: cornerRect.midX, y: cornerRect.midY)
+                        c.scaleBy(x: 1.0, y: -1.0)
+                        c.translateBy(x: -cornerRect.midX, y: -cornerRect.midY)
+                    } else {
+                        UIGraphicsPushContext(c)
+                        image.draw(in: cornerRect)
+                        UIGraphicsPopContext()
+                    }
                 }
             }
     }
@@ -129,13 +135,19 @@ public func addCorners(_ context: DrawingContext, arguments: TransformImageArgum
                     c.fill(CGRect(x: drawingRect.maxX, y: drawingRect.maxY - 7.0, width: 5.0, height: 7.0))
                     c.setBlendMode(.destinationIn)
                     let cornerRect = CGRect(origin: CGPoint(x: drawingRect.maxX - image.size.width + 6.0, y: drawingRect.maxY - image.size.height), size: image.size)
-                    c.translateBy(x: cornerRect.midX, y: cornerRect.midY)
-                    c.scaleBy(x: 1.0, y: -1.0)
-                    c.translateBy(x: -cornerRect.midX, y: -cornerRect.midY)
-                    c.draw(image.cgImage!, in: cornerRect)
-                    c.translateBy(x: cornerRect.midX, y: cornerRect.midY)
-                    c.scaleBy(x: 1.0, y: -1.0)
-                    c.translateBy(x: -cornerRect.midX, y: -cornerRect.midY)
+                    if let cgImage = image.cgImage {
+                        c.translateBy(x: cornerRect.midX, y: cornerRect.midY)
+                        c.scaleBy(x: 1.0, y: -1.0)
+                        c.translateBy(x: -cornerRect.midX, y: -cornerRect.midY)
+                        c.draw(cgImage, in: cornerRect)
+                        c.translateBy(x: cornerRect.midX, y: cornerRect.midY)
+                        c.scaleBy(x: 1.0, y: -1.0)
+                        c.translateBy(x: -cornerRect.midX, y: -cornerRect.midY)
+                    } else {
+                        UIGraphicsPushContext(c)
+                        image.draw(in: cornerRect)
+                        UIGraphicsPopContext()
+                    }
                 }
             }
     }

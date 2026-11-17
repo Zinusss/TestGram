@@ -16,7 +16,7 @@ private final class ArrowNode: HighlightTrackingButtonNode {
         self.isLeft = isLeft
         
         self.iconView = UIImageView()
-        self.iconView.image = UIImage(bundleImageName: "Chat/Context Menu/Arrow")!.withRenderingMode(.alwaysTemplate)
+        self.iconView.image = UIImage(bundleImageName: "Chat/Context Menu/Arrow")?.withRenderingMode(.alwaysTemplate)
         if isLeft {
             self.iconView.transform = CGAffineTransformMakeScale(-1.0, 1.0)
         }

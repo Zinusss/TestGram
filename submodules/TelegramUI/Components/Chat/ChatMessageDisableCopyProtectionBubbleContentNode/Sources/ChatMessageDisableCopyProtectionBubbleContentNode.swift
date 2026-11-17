@@ -160,8 +160,10 @@ public class ChatMessageDisableCopyProtectionBubbleContentNode: ChatMessageBubbl
                     }
                 ), textAlignment: .left).mutableCopy() as! NSMutableAttributedString
                 let ranges = attributedInfoText.string.subranges(of: "#")
-                for range in ranges.ranges {
-                    attributedInfoText.addAttribute(.attachment, value: UIImage(bundleImageName: "Chat/Empty Chat/ListCheckIcon")!, range: NSRange(range, in: attributedInfoText.string))
+                if let listIcon = UIImage(bundleImageName: "Chat/Empty Chat/ListCheckIcon") {
+                    for range in ranges.ranges {
+                        attributedInfoText.addAttribute(.attachment, value: listIcon, range: NSRange(range, in: attributedInfoText.string))
+                    }
                 }
                 
                 let (infoLayout, infoApply) = makeInfoLayout(TextNodeLayoutArguments(attributedString: attributedInfoText, backgroundColor: nil, maximumNumberOfLines: 0, truncationType: .end, constrainedSize: textConstrainedSize, alignment: .left, lineSpacing: 1.0, cutout: nil, insets: UIEdgeInsets(top: 0.0, left: 2.0, bottom: 0.0, right: 2.0)))

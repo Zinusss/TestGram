@@ -840,7 +840,7 @@ public final class ChatInputMessageAccessoryPanel: Component {
                     } else {
                         if let image = UIImage(bundleImageName: "Ads/TonMedium") {
                             let tonInsets = UIEdgeInsets(top: 0.0, left: 0.0, bottom: 0.0, right: 0.0)
-                            let inlineTextTonImageValue = generateTintedImage(image: generateImage(CGSize(width: tonInsets.left + image.size.width + tonInsets.right, height: image.size.height), rotatedContext: { size, context in
+                            if let inlineTextTonImageValue = generateTintedImage(image: generateImage(CGSize(width: tonInsets.left + image.size.width + tonInsets.right, height: image.size.height), rotatedContext: { size, context in
                                 context.clear(CGRect(origin: CGPoint(), size: size))
                                 UIGraphicsPushContext(context)
                                 defer {
@@ -848,9 +848,10 @@ public final class ChatInputMessageAccessoryPanel: Component {
                                 }
                                 
                                 image.draw(at: CGPoint(x: tonInsets.left, y: tonInsets.top))
-                            }), color: environment.theme.list.itemAccentColor)!.withRenderingMode(.alwaysOriginal)
-                            inlineTextTonImage = inlineTextTonImageValue
-                            self.inlineTextTonImage = (inlineTextTonImageValue, environment.theme.list.itemAccentColor)
+                            }), color: environment.theme.list.itemAccentColor)?.withRenderingMode(.alwaysOriginal) {
+                                inlineTextTonImage = inlineTextTonImageValue
+                                self.inlineTextTonImage = (inlineTextTonImageValue, environment.theme.list.itemAccentColor)
+                            }
                         }
                     }
                     

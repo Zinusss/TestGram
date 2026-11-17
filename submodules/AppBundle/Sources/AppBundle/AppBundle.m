@@ -25,6 +25,7 @@ void GGAppBundleSetImageOverrides(NSDictionary<NSString *, UIImage *> * _Nullabl
     NSDictionary *table = overrides.count != 0 ? [overrides copy] : nil;
     // GHOST: the replaced table is released here, outside the lock (or later, by the last reader holding it).
     (void)ggSwapImageOverrides(table);
+    [ggGetLookupCache() removeAllObjects];
 }
 
 // GHOST: icon packs — the current table, retained for the caller; nil while no pack is enabled.
@@ -61,15 +62,38 @@ NSBundle * _Nonnull getAppBundle() {
     return appBundle;
 }
 
+static NSCache<NSString *, id> * _Nonnull ggGetLookupCache(void) {
+    static NSCache<NSString *, id> *cache = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        cache = [[NSCache alloc] init];
+        cache.countLimit = 1500;
+    });
+    return cache;
+}
+
 @implementation UIImage (AppBundle)
 
 - (instancetype _Nullable)initWithBundleImageName:(NSString * _Nonnull)bundleImageName {
+    if (bundleImageName.length == 0) {
+        return nil;
+    }
+    
     NSDictionary<NSString *, UIImage *> *overrides = ggCurrentImageOverrides(); // GHOST: icon packs
     if (overrides != nil) {
         UIImage *image = overrides[bundleImageName];
         if (image != nil) {
             return image;
         }
+    }
+    
+    NSCache<NSString *, id> *cache = ggGetLookupCache();
+    id cached = [cache objectForKey:bundleImageName];
+    if (cached != nil) {
+        if (cached == (id)[NSNull null]) {
+            return nil;
+        }
+        return (UIImage *)cached;
     }
     
     NSBundle *bundle = getAppBundle();
@@ -100,24 +124,7 @@ NSBundle * _Nonnull getAppBundle() {
         }
     }
     
-    // Fallback 2: Check framework bundles
-    if (image == nil) {
-        for (NSBundle *b in [NSBundle allFrameworks]) {
-            image = [UIImage imageNamed:bundleImageName inBundle:b compatibleWithTraitCollection:nil];
-            if (image != nil) {
-                break;
-            }
-            NSString *lastComponent = [bundleImageName lastPathComponent];
-            if (lastComponent != nil && ![lastComponent isEqualToString:bundleImageName]) {
-                image = [UIImage imageNamed:lastComponent inBundle:b compatibleWithTraitCollection:nil];
-                if (image != nil) {
-                    break;
-                }
-            }
-        }
-    }
-    
-    // Fallback 3: Check as loose file in bundle
+    // Fallback 2: Check as loose file in bundle
     if (image == nil && bundle != nil) {
         NSString *filePath = [bundle pathForResource:bundleImageName ofType:@"png"];
         if (filePath == nil) {
@@ -132,6 +139,12 @@ NSBundle * _Nonnull getAppBundle() {
         if (filePath != nil) {
             image = [UIImage imageWithContentsOfFile:filePath];
         }
+    }
+    
+    if (image != nil) {
+        [cache setObject:image forKey:bundleImageName];
+    } else {
+        [cache setObject:(id)[NSNull null] forKey:bundleImageName];
     }
     
     return image;

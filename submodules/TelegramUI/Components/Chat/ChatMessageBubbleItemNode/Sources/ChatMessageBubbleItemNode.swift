@@ -7959,15 +7959,15 @@ public class ChatMessageBubbleItemNode: ChatMessageItemView, ChatMessagePreviewI
 }
 
 private func generateNameNavigateButtonBackgroundImage() -> UIImage {
-    return generateImage(CGSize(width: 26.0, height: 26.0), rotatedContext: { size, context in
+    return (generateImage(CGSize(width: 26.0, height: 26.0), rotatedContext: { size, context in
         context.clear(CGRect(origin: CGPoint(), size: size))
         context.setFillColor(UIColor(white: 1.0, alpha: 0.1).cgColor)
         context.fillEllipse(in: CGRect(origin: CGPoint(), size: size))
-    })!.withRenderingMode(.alwaysTemplate).stretchableImage(withLeftCapWidth: 13, topCapHeight: 13)
+    }) ?? UIImage()).withRenderingMode(.alwaysTemplate).stretchableImage(withLeftCapWidth: 13, topCapHeight: 13)
 }
 
 private func generateNameNavigateButtonIconImage() -> UIImage {
-    return generateImage(CGSize(width: 26.0, height: 26.0), rotatedContext: { size, context in
+    return (generateImage(CGSize(width: 26.0, height: 26.0), rotatedContext: { size, context in
         context.clear(CGRect(origin: CGPoint(), size: size))
         
         let arrowRect = CGSize(width: 4.0, height: 8.0).centered(in: CGRect(origin: CGPoint(), size: size)).offsetBy(dx: 1.0, dy: 0.0)
@@ -7982,7 +7982,7 @@ private func generateNameNavigateButtonIconImage() -> UIImage {
         context.addLine(to: CGPoint(x: arrowRect.minX, y: arrowRect.maxY))
         context.strokePath()
         
-    })!.withRenderingMode(.alwaysTemplate)
+    }) ?? UIImage()).withRenderingMode(.alwaysTemplate)
 }
 
 public final class NameNavigateButton: HighlightableButton {

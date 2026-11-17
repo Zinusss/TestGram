@@ -288,7 +288,9 @@ public class ChatMessageGiveawayBubbleContentNode: ChatMessageBubbleContentNode,
             }
             let badgeString = NSMutableAttributedString(string: badgeText, font: Font.with(size: 10.0, design: .round , weight: .bold, traits: .monospacedNumbers), textColor: badgeTextColor)
             if let range = badgeString.string.range(of: "⭐️") {
-                badgeString.addAttribute(.attachment, value: UIImage(bundleImageName: "Chat/Message/Stars")!, range: NSRange(range, in: badgeString.string))
+                if let starsImage = UIImage(bundleImageName: "Chat/Message/Stars") {
+                    badgeString.addAttribute(.attachment, value: starsImage, range: NSRange(range, in: badgeString.string))
+                }
                 badgeString.addAttribute(.baselineOffset, value: 1.5, range: NSRange(range, in: badgeString.string))
             }
             
