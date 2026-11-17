@@ -329,6 +329,7 @@ public func generateTintedImage(image: UIImage?, color: UIColor, backgroundColor
             context.fill(CGRect(origin: CGPoint(), size: imageSize))
         }
         
+        let imageRect = CGRect(origin: CGPoint(), size: imageSize)
         if let cgImage = image.cgImage {
             context.saveGState()
             context.translateBy(x: imageRect.midX, y: imageRect.midY)
