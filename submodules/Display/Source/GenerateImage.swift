@@ -304,7 +304,7 @@ public func generateSmallHorizontalStretchableFilledCircleImage(diameter: CGFloa
                 context.fill(CGRect(origin: CGPoint(), size: size))
             } else {
                 UIGraphicsPushContext(context)
-                color.setFill()
+                (color ?? .clear).setFill()
                 subImage.withRenderingMode(.alwaysTemplate).draw(in: CGRect(origin: CGPoint(), size: size))
                 UIGraphicsPopContext()
             }
