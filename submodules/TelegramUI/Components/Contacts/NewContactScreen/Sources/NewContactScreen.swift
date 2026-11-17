@@ -549,7 +549,9 @@ final class NewContactScreenComponent: Component {
                 
                 if let resolvedPeer = self.resolvedPeer {
                     if self.cachedChevronImage == nil || self.cachedChevronImage?.1 !== environment.theme {
-                        self.cachedChevronImage = (generateTintedImage(image: UIImage(bundleImageName: "Item List/InlineTextRightArrow"), color: environment.theme.list.itemAccentColor)!, environment.theme)
+                        if let image = generateTintedImage(image: UIImage(bundleImageName: "Item List/InlineTextRightArrow"), color: environment.theme.list.itemAccentColor) {
+                            self.cachedChevronImage = (image, environment.theme)
+                        }
                     }
                     
                     let phoneFooterRawText: String

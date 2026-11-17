@@ -978,7 +978,9 @@ private final class AdminUserActionsContentComponent: Component {
                 }
 
                 if self.cachedChevronImage == nil || self.cachedChevronImage?.1 !== component.theme {
-                    self.cachedChevronImage = (generateTintedImage(image: UIImage(bundleImageName: "Item List/InlineTextRightArrow"), color: component.theme.list.itemAccentColor)!, component.theme)
+                    if let image = generateTintedImage(image: UIImage(bundleImageName: "Item List/InlineTextRightArrow"), color: component.theme.list.itemAccentColor) {
+                        self.cachedChevronImage = (image, component.theme)
+                    }
                 }
 
                 let linkAttributeKey = NSAttributedString.Key(rawValue: "URL")
@@ -1952,13 +1954,15 @@ public class AdminUserActionsSheet: ViewControllerComponentContainer {
 }
 
 private let optionExpandUsersIcon: UIImage? = {
-    let sourceImage = UIImage(bundleImageName: "Item List/InlineIconUsers")!
+    guard let sourceImage = UIImage(bundleImageName: "Item List/InlineIconUsers") else {
+        return nil
+    }
     return generateImage(CGSize(width: sourceImage.size.width, height: sourceImage.size.height), rotatedContext: { size, context in
         context.clear(CGRect(origin: CGPoint(), size: size))
         UIGraphicsPushContext(context)
         sourceImage.draw(at: CGPoint(x: 0.0, y: 0.0))
         UIGraphicsPopContext()
-    })!.precomposed().withRenderingMode(.alwaysTemplate)
+    })?.precomposed().withRenderingMode(.alwaysTemplate)
 }()
 
 private final class OptionSectionExpandIndicatorComponent: Component {

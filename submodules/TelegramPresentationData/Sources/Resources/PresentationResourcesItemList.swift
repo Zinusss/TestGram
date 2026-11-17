@@ -125,14 +125,14 @@ public struct PresentationResourcesItemList {
     
     public static func itemListDeleteIndicatorIcon(_ theme: PresentationTheme) -> UIImage? {
         return theme.image(PresentationResourceKey.itemListDeleteIndicatorIcon.rawValue, { theme in
-            guard let image = generateTintedImage(image: UIImage(bundleImageName: "Item List/RemoveItemIcon"), color: theme.list.itemDestructiveColor) else {
+            guard let image = generateTintedImage(image: UIImage(bundleImageName: "Item List/RemoveItemIcon"), color: theme.list.itemDestructiveColor), let cgImage = image.cgImage else {
                 return nil
             }
             return generateImage(image.size, rotatedContext: { size, context in
                 context.clear(CGRect(origin: CGPoint(), size: size))
                 context.setFillColor(theme.rootController.tabBar.badgeTextColor.cgColor)
                 context.fillEllipse(in: CGRect(origin: CGPoint(x: 2, y: 2), size: CGSize(width: size.width - 4.0, height: size.height - 4.0)))
-                context.draw(image.cgImage!, in: CGRect(origin: CGPoint(), size: size))
+                context.draw(cgImage, in: CGRect(origin: CGPoint(), size: size))
             })
         })
     }
@@ -206,14 +206,14 @@ public struct PresentationResourcesItemList {
     
     public static func addPhoneIcon(_ theme: PresentationTheme) -> UIImage? {
         return theme.image(PresentationResourceKey.itemListAddPhoneIcon.rawValue, { theme in
-            guard let image = generateTintedImage(image: UIImage(bundleImageName: "Item List/AddItemIcon"), color: theme.list.itemAccentColor) else {
+            guard let image = generateTintedImage(image: UIImage(bundleImageName: "Item List/AddItemIcon"), color: theme.list.itemAccentColor), let cgImage = image.cgImage else {
                 return nil
             }
             return generateImage(image.size, rotatedContext: { size, context in
                 context.clear(CGRect(origin: CGPoint(), size: size))
                 context.setFillColor(theme.rootController.tabBar.badgeTextColor.cgColor)
                 context.fillEllipse(in: CGRect(origin: CGPoint(x: 2, y: 2), size: CGSize(width: size.width - 4.0, height: size.height - 4.0)))
-                context.draw(image.cgImage!, in: CGRect(origin: CGPoint(), size: size))
+                context.draw(cgImage, in: CGRect(origin: CGPoint(), size: size))
             })
         })
     }
@@ -343,8 +343,10 @@ public struct PresentationResourcesItemList {
                 let bounds = CGRect(origin: .zero, size: size)
                 context.clear(bounds)
                 
-                let image = UIImage(bundleImageName: "Item List/PremiumIcon")!
-                context.clip(to: bounds, mask: image.cgImage!)
+                guard let image = UIImage(bundleImageName: "Item List/PremiumIcon"), let cgImage = image.cgImage else {
+                    return
+                }
+                context.clip(to: bounds, mask: cgImage)
                 
                 let colorsArray: [CGColor] = [
                     UIColor(rgb: 0x6b93ff).cgColor,
@@ -354,7 +356,9 @@ public struct PresentationResourcesItemList {
                     UIColor(rgb: 0xb56eec).cgColor
                 ]
                 var locations: [CGFloat] = [0.0, 0.3, 0.5, 0.7, 1.0]
-                let gradient = CGGradient(colorsSpace: deviceColorSpace, colors: colorsArray as CFArray, locations: &locations)!
+                guard let gradient = CGGradient(colorsSpace: deviceColorSpace, colors: colorsArray as CFArray, locations: &locations) else {
+                    return
+                }
 
                 context.drawLinearGradient(gradient, start: CGPoint(x: 0.0, y: 0.0), end: CGPoint(x: size.width, y: size.height), options: CGGradientDrawingOptions())
             })

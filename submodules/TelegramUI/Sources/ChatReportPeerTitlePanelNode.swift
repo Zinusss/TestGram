@@ -586,7 +586,9 @@ final class ChatReportPeerTitlePanelNode: ChatTitleAccessoryPanelNode {
             }
             
             if self.cachedChevronImage == nil || self.cachedChevronImage?.1 !== interfaceState.theme {
-                self.cachedChevronImage = (generateTintedImage(image: UIImage(bundleImageName: "Item List/InlineTextRightArrow"), color: interfaceState.theme.rootController.navigationBar.accentTextColor)!, interfaceState.theme)
+                if let image = generateTintedImage(image: UIImage(bundleImageName: "Item List/InlineTextRightArrow"), color: interfaceState.theme.rootController.navigationBar.accentTextColor) {
+                    self.cachedChevronImage = (image, interfaceState.theme)
+                }
             }
             
             let plainText = interfaceState.strings.Chat_PanelCustomStatusShortInfo("#").string

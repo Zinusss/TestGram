@@ -39,13 +39,17 @@ private func generateEmptyButtonImage(icon: UIImage?, strokeColor: UIColor?, fil
             let imageSize = icon.size
             let imageRect = CGRect(origin: CGPoint(x: floor((size.width - imageSize.width) / 2.0), y: floor((size.width - imageSize.height) / 2.0)), size: imageSize)
             if knockout {
-                context.setBlendMode(.copy)
-                context.clip(to: imageRect, mask: icon.cgImage!)
-                context.setFillColor(UIColor.clear.cgColor)
-                context.fill(imageRect)
+                if let cgImage = icon.cgImage {
+                    context.setBlendMode(.copy)
+                    context.clip(to: imageRect, mask: cgImage)
+                    context.setFillColor(UIColor.clear.cgColor)
+                    context.fill(imageRect)
+                }
             } else {
-                context.setBlendMode(.normal)
-                context.draw(generateTintedImage(image: icon, color: .white)!.cgImage!, in: imageRect)
+                if let tinted = generateTintedImage(image: icon, color: .white), let cgImage = tinted.cgImage {
+                    context.setBlendMode(.normal)
+                    context.draw(cgImage, in: imageRect)
+                }
             }
         }
     })

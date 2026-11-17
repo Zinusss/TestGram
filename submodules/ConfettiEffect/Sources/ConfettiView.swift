@@ -58,22 +58,28 @@ public final class ConfettiView: UIView {
         var images: [(CGImage, CGSize)] = []
         if let customImage {
             for color in colors {
-                images.append((generateTintedImage(image: customImage, color: color)!.cgImage!, customImage.size))
+                if let tinted = generateTintedImage(image: customImage, color: color), let cgImage = tinted.cgImage {
+                    images.append((cgImage, customImage.size))
+                }
             }
         } else {
             for imageType in 0 ..< 2 {
                 for color in colors {
                     if imageType == 0 {
-                        images.append((generateFilledCircleImage(diameter: imageSize.width, color: color)!.cgImage!, imageSize))
+                        if let circle = generateFilledCircleImage(diameter: imageSize.width, color: color), let cgImage = circle.cgImage {
+                            images.append((cgImage, imageSize))
+                        }
                     } else {
                         let spriteSize = CGSize(width: 2.0, height: 6.0)
-                        images.append((generateImage(spriteSize, opaque: false, rotatedContext: { size, context in
+                        if let sprite = generateImage(spriteSize, opaque: false, rotatedContext: { size, context in
                             context.clear(CGRect(origin: CGPoint(), size: size))
                             context.setFillColor(color.cgColor)
                             context.fillEllipse(in: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: CGSize(width: size.width, height: size.width)))
                             context.fillEllipse(in: CGRect(origin: CGPoint(x: 0.0, y: size.height - size.width), size: CGSize(width: size.width, height: size.width)))
                             context.fill(CGRect(origin: CGPoint(x: 0.0, y: size.width / 2.0), size: CGSize(width: size.width, height: size.height - size.width)))
-                        })!.cgImage!, spriteSize))
+                        }), let cgImage = sprite.cgImage {
+                            images.append((cgImage, spriteSize))
+                        }
                     }
                 }
             }

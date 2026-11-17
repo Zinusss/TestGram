@@ -1565,7 +1565,9 @@ private final class GiftSetupScreenComponent: Component {
                     let starsFooterText = NSMutableAttributedString(attributedString: parseMarkdownIntoAttributedString(starsFooterRawString, attributes: footerAttributes))
                     
                     if self.cachedChevronImage == nil || self.cachedChevronImage?.1 !== environment.theme {
-                        self.cachedChevronImage = (generateTintedImage(image: UIImage(bundleImageName: "Item List/InlineTextRightArrow"), color: theme.list.itemAccentColor)!, environment.theme)
+                        if let image = generateTintedImage(image: UIImage(bundleImageName: "Item List/InlineTextRightArrow"), color: theme.list.itemAccentColor) {
+                            self.cachedChevronImage = (image, environment.theme)
+                        }
                     }
                     if let range = starsFooterText.string.range(of: "#") {
                         starsFooterText.addAttribute(ChatTextInputAttributes.customEmoji, value: ChatTextInputTextCustomEmojiAttribute(interactivelySelectedFromPackId: nil, fileId: 0, file: nil, custom: .stars(tinted: false)), range: NSRange(range, in: starsFooterText.string))
@@ -1675,7 +1677,9 @@ private final class GiftSetupScreenComponent: Component {
                     let upgradeFooterText = NSMutableAttributedString(attributedString: parsedString)
                     
                     if self.cachedChevronImage == nil || self.cachedChevronImage?.1 !== environment.theme {
-                        self.cachedChevronImage = (generateTintedImage(image: UIImage(bundleImageName: "Item List/InlineTextRightArrow"), color: theme.list.itemAccentColor)!, environment.theme)
+                        if let image = generateTintedImage(image: UIImage(bundleImageName: "Item List/InlineTextRightArrow"), color: theme.list.itemAccentColor) {
+                            self.cachedChevronImage = (image, environment.theme)
+                        }
                     }
                     if let range = upgradeFooterText.string.range(of: ">"), let chevronImage = self.cachedChevronImage?.0 {
                         upgradeFooterText.addAttribute(.attachment, value: chevronImage, range: NSRange(range, in: upgradeFooterText.string))
@@ -1874,7 +1878,9 @@ private final class GiftSetupScreenComponent: Component {
                     let auctionFooterText = NSMutableAttributedString(attributedString: parsedString)
                     
                     if self.cachedChevronImage == nil || self.cachedChevronImage?.1 !== environment.theme {
-                        self.cachedChevronImage = (generateTintedImage(image: UIImage(bundleImageName: "Item List/InlineTextRightArrow"), color: theme.list.itemAccentColor)!, environment.theme)
+                        if let image = generateTintedImage(image: UIImage(bundleImageName: "Item List/InlineTextRightArrow"), color: theme.list.itemAccentColor) {
+                            self.cachedChevronImage = (image, environment.theme)
+                        }
                     }
                     if let range = auctionFooterText.string.range(of: ">"), let chevronImage = self.cachedChevronImage?.0 {
                         auctionFooterText.addAttribute(.attachment, value: chevronImage, range: NSRange(range, in: auctionFooterText.string))

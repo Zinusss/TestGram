@@ -673,7 +673,7 @@ private func lastStateImage() -> UIImage {
         _ = cachedGalleryImage.swap(preparedImage)
         return preparedImage
     } else {
-        return UIImage(bundleImageName: "Camera/Placeholder")!
+        return UIImage(bundleImageName: "Camera/Placeholder") ?? UIImage()
     }
 }
 
@@ -861,7 +861,7 @@ final class CaptureControlsComponent: Component {
         
         override init() {
             let cachedImage = cachedGalleryImage.with({ $0 })
-            self.cachedAssetImage = ("", cachedImage ?? UIImage(bundleImageName: "Camera/Placeholder")!)
+            self.cachedAssetImage = ("", cachedImage ?? (UIImage(bundleImageName: "Camera/Placeholder") ?? UIImage()))
 
             super.init()
 

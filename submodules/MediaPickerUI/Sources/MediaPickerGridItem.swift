@@ -19,7 +19,9 @@ import RadialStatusNode
 import MediaAssetsContext
 
 private let leftShadowImage: UIImage = {
-    let baseImage = UIImage(bundleImageName: "Peer Info/MediaGridShadow")!
+    guard let baseImage = UIImage(bundleImageName: "Peer Info/MediaGridShadow"), baseImage.size.width > 0, baseImage.size.height > 0 else {
+        return UIImage()
+    }
     let image = generateImage(baseImage.size, rotatedContext: { size, context in
         context.clear(CGRect(origin: CGPoint(), size: size))
         
@@ -31,11 +33,13 @@ private let leftShadowImage: UIImage = {
         baseImage.draw(in: CGRect(origin: CGPoint(), size: size))
         UIGraphicsPopContext()
     })
-    return image!
+    return image ?? UIImage()
 }()
 
 private let rightShadowImage: UIImage = {
-    let baseImage = UIImage(bundleImageName: "Peer Info/MediaGridShadow")!
+    guard let baseImage = UIImage(bundleImageName: "Peer Info/MediaGridShadow"), baseImage.size.width > 0, baseImage.size.height > 0 else {
+        return UIImage()
+    }
     let image = generateImage(baseImage.size, rotatedContext: { size, context in
         context.clear(CGRect(origin: CGPoint(), size: size))
         
@@ -43,7 +47,7 @@ private let rightShadowImage: UIImage = {
         baseImage.draw(in: CGRect(origin: CGPoint(), size: size))
         UIGraphicsPopContext()
     })
-    return image!
+    return image ?? UIImage()
 }()
 
 enum MediaPickerGridItemContent: Equatable {

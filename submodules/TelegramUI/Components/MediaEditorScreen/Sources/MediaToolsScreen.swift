@@ -167,13 +167,13 @@ private final class MediaToolsScreenComponent: Component {
                 var image: UIImage
                 switch key {
                 case .adjustments:
-                    image = UIImage(bundleImageName: "Media Editor/Adjustments")!
+                    image = UIImage(bundleImageName: "Media Editor/Adjustments") ?? UIImage()
                 case .tint:
-                    image = UIImage(bundleImageName: "Media Editor/Tint")!
+                    image = UIImage(bundleImageName: "Media Editor/Tint") ?? UIImage()
                 case .blur:
-                    image = UIImage(bundleImageName: "Media Editor/Blur")!
+                    image = UIImage(bundleImageName: "Media Editor/Blur") ?? UIImage()
                 case .curves:
-                    image = UIImage(bundleImageName: "Media Editor/Curves")!
+                    image = UIImage(bundleImageName: "Media Editor/Curves") ?? UIImage()
                 }
                 cachedImages[key] = image
                 return image

@@ -230,21 +230,23 @@ private final class VideoMessageCameraScreenComponent: CombinedComponent {
                 var image: UIImage
                 switch key {
                 case .flip:
-                    image = UIImage(bundleImageName: "Camera/VideoMessageFlip")!.withRenderingMode(.alwaysTemplate)
+                    image = (UIImage(bundleImageName: "Camera/VideoMessageFlip") ?? UIImage()).withRenderingMode(.alwaysTemplate)
                 case .flash:
-                    image = UIImage(bundleImageName: "Camera/VideoMessageFlash")!.withRenderingMode(.alwaysTemplate)
+                    image = (UIImage(bundleImageName: "Camera/VideoMessageFlash") ?? UIImage()).withRenderingMode(.alwaysTemplate)
                 case .flashImage:
-                    image = generateImage(CGSize(width: 393.0, height: 852.0), rotatedContext: { size, context in
+                    image = (generateImage(CGSize(width: 393.0, height: 852.0), rotatedContext: { size, context in
                         context.clear(CGRect(origin: .zero, size: size))
                         
                         var locations: [CGFloat] = [0.0, 0.2, 0.6, 1.0]
                         let colors: [CGColor] = [UIColor(rgb: 0xffffff, alpha: 0.25).cgColor, UIColor(rgb: 0xffffff, alpha: 0.25).cgColor, UIColor(rgb: 0xffffff, alpha: 1.0).cgColor, UIColor(rgb: 0xffffff, alpha: 1.0).cgColor]
                         let colorSpace = CGColorSpaceCreateDeviceRGB()
-                        let gradient = CGGradient(colorsSpace: colorSpace, colors: colors as CFArray, locations: &locations)!
+                        guard let gradient = CGGradient(colorsSpace: colorSpace, colors: colors as CFArray, locations: &locations) else {
+                            return
+                        }
                         
                         let center = CGPoint(x: size.width / 2.0, y: size.height / 2.0 - 10.0)
                         context.drawRadialGradient(gradient, startCenter: center, startRadius: 0.0, endCenter: center, endRadius: size.width, options: .drawsAfterEndLocation)
-                    })!.withRenderingMode(.alwaysTemplate)
+                    }) ?? UIImage()).withRenderingMode(.alwaysTemplate)
                 }
                 cachedImages[key] = image
                 return image

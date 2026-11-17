@@ -800,7 +800,7 @@ final class OverlayAudioPlayerControllerNode: ViewControllerTracingNode, ASGestu
         let controller = UndoOverlayController(
             presentationData: self.presentationData,
             content: .universalImage(
-                image: generateTintedImage(image: UIImage(bundleImageName: "Peer Info/SavedMusic"), color: .white)!,
+                image: generateTintedImage(image: UIImage(bundleImageName: "Peer Info/SavedMusic"), color: .white) ?? UIImage(),
                 size: nil,
                 title: nil,
                 text: self.presentationData.strings.MediaPlayer_SavedMusic_AddedToProfile,
@@ -844,7 +844,7 @@ final class OverlayAudioPlayerControllerNode: ViewControllerTracingNode, ASGestu
         let controller = UndoOverlayController(
             presentationData: self.presentationData,
             content: .universalImage(
-                image: generateTintedImage(image: UIImage(bundleImageName: "Peer Info/SavedMusic"), color: .white)!,
+                image: generateTintedImage(image: UIImage(bundleImageName: "Peer Info/SavedMusic"), color: .white) ?? UIImage(),
                 size: nil,
                 title: nil,
                 text: self.presentationData.strings.MediaPlayer_SavedMusic_RemovedFromProfile,

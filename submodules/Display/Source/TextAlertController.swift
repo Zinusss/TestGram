@@ -127,9 +127,11 @@ public final class TextAlertContentActionNode: HighlightableButtonNode {
         
         let attributedString = NSMutableAttributedString(string: self.action.title, font: font, textColor: color, paragraphAlignment: .center)
         if let range = attributedString.string.range(of: "$") {
-            attributedString.addAttribute(.attachment, value: UIImage(bundleImageName: "Item List/PremiumIcon")!, range: NSRange(range, in: attributedString.string))
-            attributedString.addAttribute(.foregroundColor, value: color, range: NSRange(range, in: attributedString.string))
-            attributedString.addAttribute(.baselineOffset, value: 2.0, range: NSRange(range, in: attributedString.string))
+            if let image = UIImage(bundleImageName: "Item List/PremiumIcon") {
+                attributedString.addAttribute(.attachment, value: image, range: NSRange(range, in: attributedString.string))
+                attributedString.addAttribute(.foregroundColor, value: color, range: NSRange(range, in: attributedString.string))
+                attributedString.addAttribute(.baselineOffset, value: 2.0, range: NSRange(range, in: attributedString.string))
+            }
         }
         
         self.setAttributedTitle(attributedString, for: [])

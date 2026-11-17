@@ -128,9 +128,11 @@ final class AlertActionComponent: Component {
             
             let attributedString = NSMutableAttributedString(string: component.title, font: component.theme.font == .bold ? boldTitleFont : titleFont, textColor: .white, paragraphAlignment: .center)
             if let range = attributedString.string.range(of: "$") {
-                attributedString.addAttribute(.attachment, value: UIImage(bundleImageName: "Item List/PremiumIcon")!, range: NSRange(range, in: attributedString.string))
-                attributedString.addAttribute(.foregroundColor, value: UIColor.white, range: NSRange(range, in: attributedString.string))
-                attributedString.addAttribute(.baselineOffset, value: 2.0, range: NSRange(range, in: attributedString.string))
+                if let image = UIImage(bundleImageName: "Item List/PremiumIcon") {
+                    attributedString.addAttribute(.attachment, value: image, range: NSRange(range, in: attributedString.string))
+                    attributedString.addAttribute(.foregroundColor, value: UIColor.white, range: NSRange(range, in: attributedString.string))
+                    attributedString.addAttribute(.baselineOffset, value: 2.0, range: NSRange(range, in: attributedString.string))
+                }
             }
                   
             let titlePadding: CGFloat = 16.0

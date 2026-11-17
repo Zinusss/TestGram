@@ -5857,9 +5857,10 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
             self.dismissAllTooltips()
             
             if let message = self.chatDisplayNode.historyNode.messageInCurrentHistoryView(messageId)?._asMessage(), let _ = message.forwardInfo {
+                let lockImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Stickers/Lock"), color: .white) ?? UIImage()
                 let controller = UndoOverlayController(
                     presentationData: self.presentationData,
-                    content: .universalImage(image: generateTintedImage(image: UIImage(bundleImageName: "Chat/Stickers/Lock"), color: .white)!, size: nil, title: nil, text: self.presentationData.strings.Chat_Todo_CompletionLimitedForward, customUndoText: nil, timeout: nil),
+                    content: .universalImage(image: lockImage, size: nil, title: nil, text: self.presentationData.strings.Chat_Todo_CompletionLimitedForward, customUndoText: nil, timeout: nil),
                     action: { _ in
                         return false
                     }
@@ -5893,9 +5894,10 @@ public final class ChatControllerImpl: TelegramBaseController, ChatController, G
                 if let author = message.author {
                     peerName = EnginePeer(author).compactDisplayTitle
                 }
+                let lockImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Stickers/Lock"), color: .white) ?? UIImage()
                 let controller = UndoOverlayController(
                     presentationData: self.presentationData,
-                    content: .universalImage(image: generateTintedImage(image: UIImage(bundleImageName: "Chat/Stickers/Lock"), color: .white)!, size: nil, title: nil, text: self.presentationData.strings.Chat_Todo_CompletionLimited(peerName).string, customUndoText: nil, timeout: nil),
+                    content: .universalImage(image: lockImage, size: nil, title: nil, text: self.presentationData.strings.Chat_Todo_CompletionLimited(peerName).string, customUndoText: nil, timeout: nil),
                     action: { _ in
                         return false
                     }

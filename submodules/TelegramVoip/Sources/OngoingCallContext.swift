@@ -499,7 +499,7 @@ public final class OngoingCallVideoCapturer {
             if let data = try? Data(contentsOf: URL(fileURLWithPath: imagePath)), let image = UIImage(data: data) {
                 sourceImage = image
             } else {
-                sourceImage = UIImage(bundleImageName: "Camera/SelfiePlaceholder")!
+                sourceImage = UIImage(bundleImageName: "Camera/SelfiePlaceholder")
             }
             if let sourceImage {
                 sourceImage.draw(in: CGRect(origin: CGPoint(), size: imageSize))

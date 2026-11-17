@@ -14,7 +14,7 @@ import TextFormat
 import PeerNameTextComponent
 
 private func generateStarsAmountImage() -> UIImage {
-    return UIImage(bundleImageName: "Chat/Message/StarsCount")!.precomposed().withRenderingMode(.alwaysTemplate)
+    return (UIImage(bundleImageName: "Chat/Message/StarsCount") ?? UIImage()).precomposed().withRenderingMode(.alwaysTemplate)
 }
 
 public final class StoryLiveChatMessageComponent: Component {
@@ -658,11 +658,11 @@ public final class StoryLiveChatMessageComponent: Component {
             context.clear(CGRect(origin: CGPoint(), size: size))
             
             if let borderColor {
-                generateTintedImage(image: UIImage(bundleImageName: "Stories/LiveChatCrown"), color: borderColor)!.draw(in: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: size))
+                generateTintedImage(image: UIImage(bundleImageName: "Stories/LiveChatCrown"), color: borderColor)?.draw(in: CGRect(origin: CGPoint(x: 0.0, y: 0.0), size: size))
             }
             
             if backgroundColor != .white {
-                generateTintedImage(image: UIImage(bundleImageName: "Stories/LiveChatCrown"), color: backgroundColor)!.draw(in: CGRect(origin: CGPoint(x: borderWidth, y: borderWidth), size: baseSize))
+                generateTintedImage(image: UIImage(bundleImageName: "Stories/LiveChatCrown"), color: backgroundColor)?.draw(in: CGRect(origin: CGPoint(x: borderWidth, y: borderWidth), size: baseSize))
             } else {
                 crownTemplateImage.draw(in: CGRect(origin: CGPoint(x: borderWidth, y: borderWidth), size: baseSize))
             }

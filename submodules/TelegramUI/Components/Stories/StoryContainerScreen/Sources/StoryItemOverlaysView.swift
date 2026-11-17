@@ -23,15 +23,15 @@ import AnimationCache
 import TelegramStringFormatting
 
 private let shadowImage: UIImage = {
-    return UIImage(bundleImageName: "Stories/ReactionShadow")!
+    return UIImage(bundleImageName: "Stories/ReactionShadow") ?? UIImage()
 }()
 
 private let coverImage: UIImage = {
-    return UIImage(bundleImageName: "Stories/ReactionOutline")!
+    return UIImage(bundleImageName: "Stories/ReactionOutline") ?? UIImage()
 }()
 
 private let darkCoverImage: UIImage = {
-    return generateTintedImage(image: UIImage(bundleImageName: "Stories/ReactionOutline"), color: UIColor(rgb: 0x000000, alpha: 0.5))!
+    return generateTintedImage(image: UIImage(bundleImageName: "Stories/ReactionOutline"), color: UIColor(rgb: 0x000000, alpha: 0.5)) ?? UIImage()
 }()
 
 public func storyPreviewWithAddedReactions(

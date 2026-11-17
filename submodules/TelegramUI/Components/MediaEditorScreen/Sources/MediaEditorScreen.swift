@@ -238,19 +238,19 @@ final class MediaEditorScreenComponent: Component {
                 case .tools:
                     image = generateTintedImage(image: UIImage(bundleImageName: "Media Editor/Adjustments"), color: .white)!
                 case .rotate:
-                    image = generateTintedImage(image: UIImage(bundleImageName: "Media Editor/Rotate"), color: .white)!
+                    image = generateTintedImage(image: UIImage(bundleImageName: "Media Editor/Rotate"), color: .white) ?? UIImage()
                 case .flip:
-                    image = generateTintedImage(image: UIImage(bundleImageName: "Media Editor/Mirror"), color: .white)!
+                    image = generateTintedImage(image: UIImage(bundleImageName: "Media Editor/Mirror"), color: .white) ?? UIImage()
                 case .cutout:
-                    image = UIImage(bundleImageName: "Media Editor/Cutout")!.withRenderingMode(.alwaysTemplate)
+                    image = (UIImage(bundleImageName: "Media Editor/Cutout") ?? UIImage()).withRenderingMode(.alwaysTemplate)
                 case .undo:
-                    image = UIImage(bundleImageName: "Media Editor/CutoutUndo")!.withRenderingMode(.alwaysTemplate)
+                    image = (UIImage(bundleImageName: "Media Editor/CutoutUndo") ?? UIImage()).withRenderingMode(.alwaysTemplate)
                 case .erase:
-                    image = UIImage(bundleImageName: "Media Editor/Erase")!.withRenderingMode(.alwaysTemplate)
+                    image = (UIImage(bundleImageName: "Media Editor/Erase") ?? UIImage()).withRenderingMode(.alwaysTemplate)
                 case .restore:
-                    image = UIImage(bundleImageName: "Media Editor/Restore")!.withRenderingMode(.alwaysTemplate)
+                    image = (UIImage(bundleImageName: "Media Editor/Restore") ?? UIImage()).withRenderingMode(.alwaysTemplate)
                 case .outline:
-                    image = UIImage(bundleImageName: "Media Editor/Outline")!.withRenderingMode(.alwaysTemplate)
+                    image = (UIImage(bundleImageName: "Media Editor/Outline") ?? UIImage()).withRenderingMode(.alwaysTemplate)
                 case .done:
                     image = generateImage(CGSize(width: 33.0, height: 33.0), rotatedContext: { size, context in
                         context.clear(CGRect(origin: CGPoint(), size: size))

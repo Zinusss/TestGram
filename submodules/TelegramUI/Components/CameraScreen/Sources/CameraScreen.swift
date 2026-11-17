@@ -276,21 +276,23 @@ private final class CameraScreenComponent: CombinedComponent {
                 var image: UIImage
                 switch key {
                 case .cancel:
-                    image = UIImage(bundleImageName: "Camera/CloseIcon")!.withRenderingMode(.alwaysTemplate)
+                    image = (UIImage(bundleImageName: "Camera/CloseIcon") ?? UIImage()).withRenderingMode(.alwaysTemplate)
                 case .flip:
-                    image = UIImage(bundleImageName: "Camera/FlipIcon")!.withRenderingMode(.alwaysTemplate)
+                    image = (UIImage(bundleImageName: "Camera/FlipIcon") ?? UIImage()).withRenderingMode(.alwaysTemplate)
                 case .flashImage:
-                    image = generateImage(CGSize(width: 393.0, height: 852.0), rotatedContext: { size, context in
+                    image = (generateImage(CGSize(width: 393.0, height: 852.0), rotatedContext: { size, context in
                         context.clear(CGRect(origin: .zero, size: size))
                         
                         var locations: [CGFloat] = [0.0, 0.2, 0.6, 1.0]
                         let colors: [CGColor] = [UIColor(rgb: 0xffffff, alpha: 0.25).cgColor, UIColor(rgb: 0xffffff, alpha: 0.25).cgColor, UIColor(rgb: 0xffffff, alpha: 1.0).cgColor, UIColor(rgb: 0xffffff, alpha: 1.0).cgColor]
                         let colorSpace = CGColorSpaceCreateDeviceRGB()
-                        let gradient = CGGradient(colorsSpace: colorSpace, colors: colors as CFArray, locations: &locations)!
+                        guard let gradient = CGGradient(colorsSpace: colorSpace, colors: colors as CFArray, locations: &locations) else {
+                            return
+                        }
                         
                         let center = CGPoint(x: size.width / 2.0, y: size.height / 2.0 - 10.0)
                         context.drawRadialGradient(gradient, startCenter: center, startRadius: 0.0, endCenter: center, endRadius: size.width, options: .drawsAfterEndLocation)
-                    })!.withRenderingMode(.alwaysTemplate)
+                    }) ?? UIImage()).withRenderingMode(.alwaysTemplate)
                 case .topGradient:
                     if let gradientImage = UIImage(named: "Stories/PanelGradient"), let cgImage = gradientImage.cgImage {
                         image = UIImage(cgImage: cgImage, scale: 0.0, orientation: .down).stretchableImage(withLeftCapWidth: 0, topCapHeight: Int(gradientImage.size.height - 1.0))

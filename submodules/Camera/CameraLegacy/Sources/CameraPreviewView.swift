@@ -82,7 +82,7 @@ final class LegacyCameraSimplePreviewView: UIView, CameraSimplePreviewView {
                 result = image.preparingForDisplay() ?? image
             }
         } else {
-            result = UIImage(bundleImageName: front ? "Camera/SelfiePlaceholder" : "Camera/Placeholder")!
+            result = UIImage(bundleImageName: front ? "Camera/SelfiePlaceholder" : "Camera/Placeholder") ?? UIImage()
         }
         self.cacheImage(result, front: front)
         return result

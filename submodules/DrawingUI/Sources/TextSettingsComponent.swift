@@ -384,17 +384,17 @@ final class TextSettingsComponent: CombinedComponent {
                 var image: UIImage
                 switch key {
                 case .regular:
-                    image = UIImage(bundleImageName: "Media Editor/TextDefault")!
+                    image = UIImage(bundleImageName: "Media Editor/TextDefault") ?? UIImage()
                 case .filled:
-                    image = UIImage(bundleImageName: "Media Editor/TextFilled")!
+                    image = UIImage(bundleImageName: "Media Editor/TextFilled") ?? UIImage()
                 case .semi:
-                    image = UIImage(bundleImageName: "Media Editor/TextSemi")!
+                    image = UIImage(bundleImageName: "Media Editor/TextSemi") ?? UIImage()
                 case .stroke:
-                    image = UIImage(bundleImageName: "Media Editor/TextStroke")!
+                    image = UIImage(bundleImageName: "Media Editor/TextStroke") ?? UIImage()
                 case .keyboard:
-                    image = generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Text/AccessoryIconKeyboard"), color: .white)!
+                    image = generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Text/AccessoryIconKeyboard"), color: .white) ?? UIImage()
                 case .emoji:
-                    image = generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Media/EntityInputEmojiIcon"), color: .white)!
+                    image = generateTintedImage(image: UIImage(bundleImageName: "Chat/Input/Media/EntityInputEmojiIcon"), color: .white) ?? UIImage()
                 }
                 cachedImages[key] = image
                 return image

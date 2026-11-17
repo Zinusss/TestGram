@@ -1462,7 +1462,7 @@ public final class StarsWithdrawScreen: ViewControllerComponentContainer {
         let resultController = UndoOverlayController(
             presentationData: presentationData,
             content: .image(
-                image: currency == .ton ? generateTintedImage(image: UIImage(bundleImageName: "Premium/TonGift"), color: .white)! : UIImage(bundleImageName: "Premium/Stars/StarLarge")!,
+                image: (currency == .ton ? generateTintedImage(image: UIImage(bundleImageName: "Premium/TonGift"), color: .white) : UIImage(bundleImageName: "Premium/Stars/StarLarge")) ?? UIImage(),
                 title: nil,
                 text: text,
                 round: false,

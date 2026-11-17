@@ -4351,7 +4351,8 @@ extension ChatControllerImpl {
             let locale = Locale(identifier: languageCode)
             let fromLanguage: String = locale.localizedString(forLanguageCode: langCode) ?? ""
             
-            self.present(UndoOverlayController(presentationData: presentationData, content: .image(image: generateTintedImage(image: UIImage(bundleImageName: "Chat/Title Panels/Translate"), color: .white)!, title: nil, text: presentationData.strings.Conversation_Translation_AddedToDoNotTranslateText(fromLanguage).string, round: false, undoText: presentationData.strings.Conversation_Translation_Settings), elevatedLayout: false, animateInAsReplacement: false, action: { [weak self] action in
+            let translateImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Title Panels/Translate"), color: .white) ?? UIImage()
+            self.present(UndoOverlayController(presentationData: presentationData, content: .image(image: translateImage, title: nil, text: presentationData.strings.Conversation_Translation_AddedToDoNotTranslateText(fromLanguage).string, round: false, undoText: presentationData.strings.Conversation_Translation_Settings), elevatedLayout: false, animateInAsReplacement: false, action: { [weak self] action in
                 if case .undo = action, let self {
                     let controller = translationSettingsController(context: self.context)
                     controller.navigationPresentation = .modal
@@ -4382,7 +4383,8 @@ extension ChatControllerImpl {
                     text = presentationData.strings.Conversation_Translation_TranslationBarHiddenChatText
                 }
             }
-            strongSelf.present(UndoOverlayController(presentationData: presentationData, content: .image(image: generateTintedImage(image: UIImage(bundleImageName: "Chat/Title Panels/Translate"), color: .white)!, title: nil, text: text, round: false, undoText: presentationData.strings.Undo_Undo), elevatedLayout: false, animateInAsReplacement: false, action: { action in
+            let translateImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Title Panels/Translate"), color: .white) ?? UIImage()
+            strongSelf.present(UndoOverlayController(presentationData: presentationData, content: .image(image: translateImage, title: nil, text: text, round: false, undoText: presentationData.strings.Undo_Undo), elevatedLayout: false, animateInAsReplacement: false, action: { action in
                     if case .undo = action {
                         let _ = context.engine.messages.togglePeerMessagesTranslationHidden(peerId: peerId, hidden: false).startStandalone()
                     }

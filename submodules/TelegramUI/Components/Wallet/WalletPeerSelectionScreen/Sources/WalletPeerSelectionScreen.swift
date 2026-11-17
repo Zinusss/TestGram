@@ -367,7 +367,7 @@ private final class WalletPeerSelectionScreenComponent: Component {
                     presentationData: ItemListPresentationData(listNode.presentationData),
                     systemStyle: .glass,
                     title: title,
-                    icon: .generic(walletMoveActionIcon("Wallet/MoveToGifts")!),
+                    icon: walletMoveActionIcon("Wallet/MoveToGifts").map(ContactListActionItemIcon.generic) ?? .none,
                     actionStyle: .generic,
                     height: .tall,
                     hideBackground: true,

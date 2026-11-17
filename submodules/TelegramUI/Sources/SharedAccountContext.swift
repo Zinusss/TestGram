@@ -3205,7 +3205,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
             if birthday == nil {
                 return [ContactListAdditionalOption(
                     title: presentationData.strings.Premium_Gift_ContactSelection_AddBirthday,
-                    icon: .generic(UIImage(bundleImageName: "Contact List/AddBirthdayIcon")!),
+                    icon: UIImage(bundleImageName: "Contact List/AddBirthdayIcon").map(ContactListActionItemIcon.generic) ?? .none,
                     action: {
                         presentBirthdayPickerImpl?()
                     },
@@ -3309,11 +3309,13 @@ public final class SharedAccountContextImpl: SharedAccountContext {
                     let daysString = presentationData.strings.Gift_Transfer_SendUnlocks_Days(days)
                     subtitle = presentationData.strings.Gift_Transfer_SendUnlocks(daysString).string
                 }
+                let moveIconImage = context.walletContext?.stateValue.walletAddress != nil ? walletMoveActionIcon("Wallet/MoveToWallet") : UIImage(bundleImageName: "Item List/Ton")
+                let moveIcon = moveIconImage.map(ContactListActionItemIcon.generic) ?? .none
                 contactOptions = .single([
                     ContactListAdditionalOption(
                         title: context.walletContext?.stateValue.walletAddress != nil ? presentationData.strings.Gift_Transfer_MoveToWallet : presentationData.strings.Gift_Transfer_SendViaBlockchain,
                         subtitle: subtitle,
-                        icon: .generic(context.walletContext?.stateValue.walletAddress != nil ? walletMoveActionIcon("Wallet/MoveToWallet")! : UIImage(bundleImageName: "Item List/Ton")!),
+                        icon: moveIcon,
                         style: .generic,
                         action: {
                             presentExportAlertImpl?()
@@ -3326,10 +3328,11 @@ public final class SharedAccountContextImpl: SharedAccountContext {
             }
         } else if case .starGiftDeposit = source {
             allowChannelsInSearch = true
+            let depositIcon = walletMoveActionIcon("Wallet/MoveToGifts").map(ContactListActionItemIcon.generic) ?? .none
             contactOptions = .single([
                 ContactListAdditionalOption(
                     title: presentationData.strings.Gift_Transfer_MoveToGifts,
-                    icon: .generic(walletMoveActionIcon("Wallet/MoveToGifts")!),
+                    icon: depositIcon,
                     style: .generic,
                     action: {
                         presentDepositAlertImpl?()
@@ -3343,7 +3346,7 @@ public final class SharedAccountContextImpl: SharedAccountContext {
                 if birthday == nil {
                     return [ContactListAdditionalOption(
                         title: presentationData.strings.Premium_Gift_ContactSelection_AddBirthday,
-                        icon: .generic(UIImage(bundleImageName: "Contact List/AddBirthdayIcon")!),
+                        icon: UIImage(bundleImageName: "Contact List/AddBirthdayIcon").map(ContactListActionItemIcon.generic) ?? .none,
                         action: {
                             presentBirthdayPickerImpl?()
                         },

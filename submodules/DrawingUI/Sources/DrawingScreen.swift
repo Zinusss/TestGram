@@ -643,17 +643,17 @@ private final class DrawingScreenComponent: CombinedComponent {
                 case .undo:
                     image = generateTintedImage(image: UIImage(bundleImageName: "Media Editor/Undo"), color: .white)!
                 case .done:
-                    image = generateTintedImage(image: UIImage(bundleImageName: "Media Editor/Done"), color: .white)!
+                    image = generateTintedImage(image: UIImage(bundleImageName: "Media Editor/Done"), color: .white) ?? UIImage()
                 case .add:
-                    image = generateTintedImage(image: UIImage(bundleImageName: "Media Editor/Add"), color: .white)!
+                    image = generateTintedImage(image: UIImage(bundleImageName: "Media Editor/Add"), color: .white) ?? UIImage()
                 case .fill:
-                    image = UIImage(bundleImageName: "Media Editor/Fill")!
+                    image = UIImage(bundleImageName: "Media Editor/Fill") ?? UIImage()
                 case .stroke:
-                    image = UIImage(bundleImageName: "Media Editor/Stroke")!
+                    image = UIImage(bundleImageName: "Media Editor/Stroke") ?? UIImage()
                 case .flip:
-                    image = UIImage(bundleImageName: "Media Editor/Flip")!
+                    image = UIImage(bundleImageName: "Media Editor/Flip") ?? UIImage()
                 case .zoomOut:
-                    image = generateTintedImage(image: UIImage(bundleImageName: "Media Editor/ZoomOut"), color: .white)!
+                    image = generateTintedImage(image: UIImage(bundleImageName: "Media Editor/ZoomOut"), color: .white) ?? UIImage()
                 }
                 cachedImages[key] = image
                 return image

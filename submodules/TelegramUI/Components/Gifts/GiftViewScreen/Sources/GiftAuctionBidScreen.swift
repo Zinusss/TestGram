@@ -1639,7 +1639,7 @@ private final class GiftAuctionBidScreenComponent: Component {
                     UndoOverlayController(
                         presentationData: presentationData,
                         content: .universalImage(
-                            image: generateTintedImage(image:  UIImage(bundleImageName: "Premium/Auction/BidMedium"), color: .white)!,
+                            image: generateTintedImage(image:  UIImage(bundleImageName: "Premium/Auction/BidMedium"), color: .white) ?? UIImage(),
                             size: nil,
                             title: title,
                             text: text,
@@ -2990,7 +2990,9 @@ private final class GiftAuctionBidScreenComponent: Component {
             initialContentHeight = contentHeight
             
             if self.cachedStarImage == nil || self.cachedStarImage?.1 !== environment.theme {
-                self.cachedStarImage = (generateTintedImage(image: UIImage(bundleImageName: "Item List/PremiumIcon"), color: .white)!, environment.theme)
+                if let image = generateTintedImage(image: UIImage(bundleImageName: "Item List/PremiumIcon"), color: .white) {
+                    self.cachedStarImage = (image, environment.theme)
+                }
             }
             
             var formattedAmount = presentationStringsFormattedNumber(Int32(clamping: self.amount.realValue), environment.dateTimeFormat.groupingSeparator)

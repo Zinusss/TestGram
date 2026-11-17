@@ -217,7 +217,9 @@ private final class SheetContent: CombinedComponent {
             contentSize.height += 39.0
             
             if state.cachedChevronImage == nil || state.cachedChevronImage?.1 !== environment.theme {
-                state.cachedChevronImage = (generateTintedImage(image: UIImage(bundleImageName: "Contact List/SubtitleArrow"), color: environment.theme.list.itemAccentColor)!, environment.theme)
+                if let image = generateTintedImage(image: UIImage(bundleImageName: "Contact List/SubtitleArrow"), color: environment.theme.list.itemAccentColor) {
+                    state.cachedChevronImage = (image, environment.theme)
+                }
             }
            
             let configuration = EmojiGameStakeConfiguration.with(appConfiguration: component.context.currentAppConfiguration.with { $0 })

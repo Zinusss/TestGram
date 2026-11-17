@@ -456,8 +456,8 @@ private final class QrCodeScanScreenNode: ViewControllerTracingNode, ASScrollVie
         
         self.frameNode = FrameNode()
         
-        self.galleryButtonNode = GlassButtonNode(icon: UIImage(bundleImageName: "Wallet/CameraGalleryIcon")!, label: nil)
-        self.torchButtonNode = GlassButtonNode(icon: UIImage(bundleImageName: "Wallet/CameraFlashIcon")!, label: nil)
+        self.galleryButtonNode = GlassButtonNode(icon: UIImage(bundleImageName: "Wallet/CameraGalleryIcon") ?? UIImage(), label: nil)
+        self.torchButtonNode = GlassButtonNode(icon: UIImage(bundleImageName: "Wallet/CameraFlashIcon") ?? UIImage(), label: nil)
         
         let title: String
         var text: String

@@ -214,12 +214,12 @@ private class ExtendedMediaOverlayNode: ASDisplayNode {
         case lock
         case eye
         
-        var image: UIImage {
+        var image: UIImage? {
             switch self {
             case .lock:
-                return generateTintedImage(image: UIImage(bundleImageName: "Chat/Stickers/SmallLock"), color: .white)!
+                return generateTintedImage(image: UIImage(bundleImageName: "Chat/Stickers/SmallLock"), color: .white)
             case .eye:
-                return generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/AgeRestricted"), color: .white)!
+                return generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/AgeRestricted"), color: .white)
             }
         }
     }

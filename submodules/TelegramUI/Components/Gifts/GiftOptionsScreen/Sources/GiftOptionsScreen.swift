@@ -1324,7 +1324,9 @@ final class GiftOptionsScreenComponent: Component {
             }
             
             if self.chevronImage == nil || self.chevronImage?.1 !== theme {
-                self.chevronImage = (generateTintedImage(image: UIImage(bundleImageName: "Settings/TextArrowRight"), color: accentColor)!, theme)
+                if let image = generateTintedImage(image: UIImage(bundleImageName: "Settings/TextArrowRight"), color: accentColor) {
+                    self.chevronImage = (image, theme)
+                }
             }
             let markdownAttributes = MarkdownAttributes(body: MarkdownAttributeSet(font: textFont, textColor: textColor), bold: MarkdownAttributeSet(font: boldTextFont, textColor: textColor), link: MarkdownAttributeSet(font: textFont, textColor: accentColor), linkAttribute: { contents in
                 return (TelegramTextAttributes.URL, contents)

@@ -184,7 +184,9 @@ private let minDurationImage: UIImage = {
 }()
 
 private let leftShadowImage: UIImage = {
-    let baseImage = UIImage(bundleImageName: "Peer Info/MediaGridShadow")!
+    guard let baseImage = UIImage(bundleImageName: "Peer Info/MediaGridShadow"), baseImage.size.width > 0, baseImage.size.height > 0 else {
+        return UIImage()
+    }
     let image = generateImage(baseImage.size, rotatedContext: { size, context in
         context.clear(CGRect(origin: CGPoint(), size: size))
         
@@ -196,11 +198,13 @@ private let leftShadowImage: UIImage = {
         baseImage.draw(in: CGRect(origin: CGPoint(), size: size))
         UIGraphicsPopContext()
     })
-    return image!
+    return image ?? UIImage()
 }()
 
 private let rightShadowImage: UIImage = {
-    let baseImage = UIImage(bundleImageName: "Peer Info/MediaGridShadow")!
+    guard let baseImage = UIImage(bundleImageName: "Peer Info/MediaGridShadow"), baseImage.size.width > 0, baseImage.size.height > 0 else {
+        return UIImage()
+    }
     let image = generateImage(baseImage.size, rotatedContext: { size, context in
         context.clear(CGRect(origin: CGPoint(), size: size))
         
@@ -208,11 +212,13 @@ private let rightShadowImage: UIImage = {
         baseImage.draw(in: CGRect(origin: CGPoint(), size: size))
         UIGraphicsPopContext()
     })
-    return image!
+    return image ?? UIImage()
 }()
 
 private let topRightShadowImage: UIImage = {
-    let baseImage = UIImage(bundleImageName: "Peer Info/MediaGridShadow")!
+    guard let baseImage = UIImage(bundleImageName: "Peer Info/MediaGridShadow"), baseImage.size.width > 0, baseImage.size.height > 0 else {
+        return UIImage()
+    }
     let image = generateImage(baseImage.size, rotatedContext: { size, context in
         context.clear(CGRect(origin: CGPoint(), size: size))
         
@@ -224,11 +230,13 @@ private let topRightShadowImage: UIImage = {
         baseImage.draw(in: CGRect(origin: CGPoint(), size: size))
         UIGraphicsPopContext()
     })
-    return image!
+    return image ?? UIImage()
 }()
 
 private let topLeftShadowImage: UIImage = {
-    let baseImage = UIImage(bundleImageName: "Peer Info/MediaGridShadow")!
+    guard let baseImage = UIImage(bundleImageName: "Peer Info/MediaGridShadow"), baseImage.size.width > 0, baseImage.size.height > 0 else {
+        return UIImage()
+    }
     let image = generateImage(baseImage.size, rotatedContext: { size, context in
         context.clear(CGRect(origin: CGPoint(), size: size))
         
@@ -240,11 +248,13 @@ private let topLeftShadowImage: UIImage = {
         baseImage.draw(in: CGRect(origin: CGPoint(), size: size))
         UIGraphicsPopContext()
     })
-    return image!
+    return image ?? UIImage()
 }()
 
 private let viewCountImage: UIImage = {
-    let baseImage = UIImage(bundleImageName: "Peer Info/MediaGridViewCount")!
+    guard let baseImage = UIImage(bundleImageName: "Peer Info/MediaGridViewCount"), baseImage.size.width > 0, baseImage.size.height > 0 else {
+        return UIImage()
+    }
     let image = generateImage(baseImage.size, rotatedContext: { size, context in
         context.clear(CGRect(origin: CGPoint(), size: size))
         
@@ -252,7 +262,7 @@ private let viewCountImage: UIImage = {
         baseImage.draw(in: CGRect(origin: CGPoint(), size: size))
         UIGraphicsPopContext()
     })
-    return image!
+    return image ?? UIImage()
 }()
 
 private let privacyTypeImageScaleFactor: CGFloat = {
@@ -260,7 +270,9 @@ private let privacyTypeImageScaleFactor: CGFloat = {
 }()
 
 private let topRightIconPinnedImage: UIImage = {
-    let baseImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/Pinned"), color: .white)!
+    guard let baseImage = generateTintedImage(image: UIImage(bundleImageName: "Chat/Message/Pinned"), color: .white), baseImage.size.width > 0, baseImage.size.height > 0 else {
+        return UIImage()
+    }
     let imageSize = CGSize(width: floor(baseImage.size.width * 1.0), height: floor(baseImage.size.width * 1.0))
     let image = generateImage(CGSize(width: imageSize.width + 4.0, height: imageSize.height + 4.0), rotatedContext: { size, context in
         context.clear(CGRect(origin: CGPoint(), size: size))
@@ -269,11 +281,13 @@ private let topRightIconPinnedImage: UIImage = {
         baseImage.draw(in: CGRect(origin: CGPoint(x: 0.0, y: 4.0), size: imageSize))
         UIGraphicsPopContext()
     })
-    return image!
+    return image ?? UIImage()
 }()
 
 private let privacyTypeContactsImage: UIImage = {
-    let baseImage = UIImage(bundleImageName: "Stories/PrivacyContacts")!
+    guard let baseImage = UIImage(bundleImageName: "Stories/PrivacyContacts"), baseImage.size.width > 0, baseImage.size.height > 0 else {
+        return UIImage()
+    }
     let imageSize = CGSize(width: floor(baseImage.size.width * privacyTypeImageScaleFactor), height: floor(baseImage.size.width * privacyTypeImageScaleFactor))
     let image = generateImage(imageSize, rotatedContext: { size, context in
         context.clear(CGRect(origin: CGPoint(), size: size))
@@ -282,11 +296,13 @@ private let privacyTypeContactsImage: UIImage = {
         baseImage.draw(in: CGRect(origin: CGPoint(), size: size))
         UIGraphicsPopContext()
     })
-    return image!
+    return image ?? UIImage()
 }()
 
 private let privacyTypeCloseFriendsImage: UIImage = {
-    let baseImage = UIImage(bundleImageName: "Stories/PrivacyCloseFriends")!
+    guard let baseImage = UIImage(bundleImageName: "Stories/PrivacyCloseFriends"), baseImage.size.width > 0, baseImage.size.height > 0 else {
+        return UIImage()
+    }
     let imageSize = CGSize(width: floor(baseImage.size.width * privacyTypeImageScaleFactor), height: floor(baseImage.size.width * privacyTypeImageScaleFactor))
     let image = generateImage(imageSize, rotatedContext: { size, context in
         context.clear(CGRect(origin: CGPoint(), size: size))
@@ -295,11 +311,13 @@ private let privacyTypeCloseFriendsImage: UIImage = {
         baseImage.draw(in: CGRect(origin: CGPoint(), size: size))
         UIGraphicsPopContext()
     })
-    return image!
+    return image ?? UIImage()
 }()
 
 private let privacyTypeSelectedImage: UIImage = {
-    let baseImage = UIImage(bundleImageName: "Stories/PrivacySelectedContacts")!
+    guard let baseImage = UIImage(bundleImageName: "Stories/PrivacySelectedContacts"), baseImage.size.width > 0, baseImage.size.height > 0 else {
+        return UIImage()
+    }
     let imageSize = CGSize(width: floor(baseImage.size.width * privacyTypeImageScaleFactor), height: floor(baseImage.size.width * privacyTypeImageScaleFactor))
     let image = generateImage(imageSize, rotatedContext: { size, context in
         context.clear(CGRect(origin: CGPoint(), size: size))
@@ -308,7 +326,7 @@ private let privacyTypeSelectedImage: UIImage = {
         baseImage.draw(in: CGRect(origin: CGPoint(), size: size))
         UIGraphicsPopContext()
     })
-    return image!
+    return image ?? UIImage()
 }()
 
 private enum ItemTopRightIcon {

@@ -2522,7 +2522,9 @@ private final class ChatSendStarsScreenComponent: Component {
             initialContentHeight = contentHeight
             
             if self.cachedStarImage == nil || self.cachedStarImage?.1 !== environment.theme {
-                self.cachedStarImage = (generateTintedImage(image: UIImage(bundleImageName: "Item List/PremiumIcon"), color: .white)!, environment.theme)
+                if let image = generateTintedImage(image: UIImage(bundleImageName: "Item List/PremiumIcon"), color: .white) {
+                    self.cachedStarImage = (image, environment.theme)
+                }
             }
             
             let buttonString: String
