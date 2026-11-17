@@ -11,6 +11,16 @@ static atomic_bool ggHasImageOverrides = false;
 static os_unfair_lock ggImageOverridesLock = OS_UNFAIR_LOCK_INIT;
 static NSDictionary<NSString *, UIImage *> *ggImageOverrides = nil;
 
+static NSCache<NSString *, id> * _Nonnull ggGetLookupCache(void) {
+    static NSCache<NSString *, id> *cache = nil;
+    static dispatch_once_t onceToken;
+    dispatch_once(&onceToken, ^{
+        cache = [[NSCache alloc] init];
+        cache.countLimit = 1500;
+    });
+    return cache;
+}
+
 // GHOST: icon packs — swaps the published table, returns the replaced one.
 static NSDictionary<NSString *, UIImage *> * _Nullable ggSwapImageOverrides(NSDictionary<NSString *, UIImage *> * _Nullable table) {
     os_unfair_lock_lock(&ggImageOverridesLock);
@@ -60,16 +70,6 @@ NSBundle * _Nonnull getAppBundle() {
     });
     
     return appBundle;
-}
-
-static NSCache<NSString *, id> * _Nonnull ggGetLookupCache(void) {
-    static NSCache<NSString *, id> *cache = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        cache = [[NSCache alloc] init];
-        cache.countLimit = 1500;
-    });
-    return cache;
 }
 
 @implementation UIImage (AppBundle)
