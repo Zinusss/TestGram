@@ -2359,7 +2359,9 @@ open class TextNode: ASDisplayNode, TextNodeProtocol {
             return
         }
         
-        let context = UIGraphicsGetCurrentContext()!
+        guard let context = UIGraphicsGetCurrentContext() else {
+            return
+        }
         
         context.setAllowsAntialiasing(true)
         
@@ -3001,7 +3003,9 @@ open class TextView: UIView {
     public override func draw(_ rect: CGRect) {
         let layout = self.cachedLayout
         
-        let context = UIGraphicsGetCurrentContext()!
+        guard let context = UIGraphicsGetCurrentContext() else {
+            return
+        }
         
         context.setAllowsAntialiasing(true)
         

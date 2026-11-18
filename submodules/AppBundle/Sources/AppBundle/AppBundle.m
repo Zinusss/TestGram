@@ -109,13 +109,13 @@ static UIImage * _Nullable ggFallbackSystemImage(NSString * _Nonnull bundleImage
     if ([bundleImageName containsString:@"CameraFlashIcon"]) {
         return [UIImage systemImageNamed:@"bolt"];
     }
-    if ([bundleImageName containsString:@"ReplyQuoteIcon"]) {
+    if ([bundleImageName containsString:@"ReplyQuoteIcon"] || [bundleImageName containsString:@"Quote"]) {
         return [UIImage systemImageNamed:@"quote.opening"];
     }
-    if ([bundleImageName containsString:@"TextCodeIcon"]) {
+    if ([bundleImageName containsString:@"TextCodeIcon"] || [bundleImageName containsString:@"Code"]) {
         return [UIImage systemImageNamed:@"chevron.left.forwardslash.chevron.right"];
     }
-    if ([bundleImageName containsString:@"Delete"] || [bundleImageName containsString:@"trash"]) {
+    if ([bundleImageName containsString:@"Delete"] || [bundleImageName containsString:@"trash"] || [bundleImageName containsString:@"RemoveItem"]) {
         return [UIImage systemImageNamed:@"trash"];
     }
     if ([bundleImageName containsString:@"Time"] || [bundleImageName containsString:@"Timer"]) {
@@ -130,72 +130,37 @@ static UIImage * _Nullable ggFallbackSystemImage(NSString * _Nonnull bundleImage
     if ([bundleImageName containsString:@"ReadingList"]) {
         return [UIImage systemImageNamed:@"bookmark"];
     }
+    if ([bundleImageName containsString:@"AddItem"] || [bundleImageName containsString:@"AddIcon"]) {
+        return [UIImage systemImageNamed:@"plus"];
+    }
+    if ([bundleImageName containsString:@"PremiumIcon"]) {
+        return [UIImage systemImageNamed:@"star.fill"];
+    }
+    if ([bundleImageName containsString:@"QrIcon"]) {
+        return [UIImage systemImageNamed:@"qrcode"];
+    }
+    if ([bundleImageName containsString:@"NavigationMore"]) {
+        return [UIImage systemImageNamed:@"ellipsis"];
+    }
+    if ([bundleImageName containsString:@"Back"]) {
+        return [UIImage systemImageNamed:@"chevron.backward"];
+    }
+    if ([bundleImageName containsString:@"Close"]) {
+        return [UIImage systemImageNamed:@"xmark"];
+    }
+    if ([bundleImageName containsString:@"Done"]) {
+        return [UIImage systemImageNamed:@"checkmark"];
+    }
+    if ([bundleImageName containsString:@"Undo"]) {
+        return [UIImage systemImageNamed:@"arrow.uturn.backward"];
+    }
+    if ([bundleImageName containsString:@"Fill"]) {
+        return [UIImage systemImageNamed:@"paintbrush"];
+    }
+    if ([bundleImageName containsString:@"Stroke"]) {
+        return [UIImage systemImageNamed:@"pencil.tip"];
+    }
     return nil;
-}
-
-static NSArray<NSBundle *> * _Nonnull ggGetCandidateBundles(void) {
-    static NSArray<NSBundle *> *candidateBundles = nil;
-    static dispatch_once_t onceToken;
-    dispatch_once(&onceToken, ^{
-        NSMutableArray<NSBundle *> *bundles = [NSMutableArray array];
-        NSBundle *appBundle = getAppBundle();
-        if (appBundle != nil) {
-            [bundles addObject:appBundle];
-        }
-        NSBundle *mainBundle = [NSBundle mainBundle];
-        if (mainBundle != nil && ![bundles containsObject:mainBundle]) {
-            [bundles addObject:mainBundle];
-        }
-        
-        NSString *rootPath = appBundle.bundlePath ?: mainBundle.bundlePath;
-        NSString *resolvedRoot = [rootPath stringByResolvingSymlinksInPath];
-        if (resolvedRoot != nil) {
-            for (NSBundle *b in [NSBundle allBundles]) {
-                NSString *bp = [b.bundlePath stringByResolvingSymlinksInPath];
-                if (bp != nil && ([bp hasPrefix:resolvedRoot] || [bp containsString:@".app/"]) && ![bundles containsObject:b]) {
-                    [bundles addObject:b];
-                }
-            }
-            for (NSBundle *b in [NSBundle allFrameworks]) {
-                NSString *bp = [b.bundlePath stringByResolvingSymlinksInPath];
-                if (bp != nil && ([bp hasPrefix:resolvedRoot] || [bp containsString:@".app/"]) && ![bundles containsObject:b]) {
-                    [bundles addObject:b];
-                }
-            }
-            NSURL *frameworksURL = [appBundle privateFrameworksURL] ?: [mainBundle privateFrameworksURL];
-            if (frameworksURL != nil) {
-                NSArray<NSURL *> *contents = [[NSFileManager defaultManager] contentsOfDirectoryAtURL:frameworksURL
-                                                                            includingPropertiesForKeys:nil
-                                                                                               options:NSDirectoryEnumerationSkipsHiddenFiles
-                                                                                                 error:nil];
-                for (NSURL *url in contents) {
-                    if ([url.pathExtension isEqualToString:@"framework"] || [url.pathExtension isEqualToString:@"bundle"]) {
-                        NSBundle *b = [NSBundle bundleWithURL:url];
-                        if (b != nil && ![bundles containsObject:b]) {
-                            [bundles addObject:b];
-                        }
-                    }
-                }
-            }
-            NSURL *appURL = appBundle.bundleURL ?: mainBundle.bundleURL;
-            if (appURL != nil) {
-                NSArray<NSURL *> *appContents = [[NSFileManager defaultManager] contentsOfDirectoryAtURL:appURL
-                                                                               includingPropertiesForKeys:nil
-                                                                                                  options:NSDirectoryEnumerationSkipsHiddenFiles
-                                                                                                    error:nil];
-                for (NSURL *url in appContents) {
-                    if ([url.pathExtension isEqualToString:@"bundle"]) {
-                        NSBundle *b = [NSBundle bundleWithURL:url];
-                        if (b != nil && ![bundles containsObject:b]) {
-                            [bundles addObject:b];
-                        }
-                    }
-                }
-            }
-        }
-        candidateBundles = [bundles copy];
-    });
-    return candidateBundles;
 }
 
 @implementation UIImage (AppBundle)
@@ -205,7 +170,8 @@ static NSArray<NSBundle *> * _Nonnull ggGetCandidateBundles(void) {
         return nil;
     }
     
-    NSDictionary<NSString *, UIImage *> *overrides = ggCurrentImageOverrides(); // GHOST: icon packs
+    // GHOST: icon packs
+    NSDictionary<NSString *, UIImage *> *overrides = ggCurrentImageOverrides();
     if (overrides != nil) {
         UIImage *image = overrides[bundleImageName];
         if (image != nil) {
@@ -213,6 +179,7 @@ static NSArray<NSBundle *> * _Nonnull ggGetCandidateBundles(void) {
         }
     }
     
+    // Fast O(1) in-memory cache lookup
     NSCache<NSString *, id> *cache = ggGetLookupCache();
     id cached = [cache objectForKey:bundleImageName];
     if (cached != nil) {
@@ -222,74 +189,58 @@ static NSArray<NSBundle *> * _Nonnull ggGetCandidateBundles(void) {
         return (UIImage *)cached;
     }
     
-    NSArray<NSBundle *> *candidates = ggGetCandidateBundles();
+    NSBundle *appBundle = getAppBundle();
+    NSBundle *mainBundle = [NSBundle mainBundle];
     UIImage *image = nil;
     
-    // 1. Check full bundleImageName in all candidate bundles
-    for (NSBundle *b in candidates) {
-        image = [UIImage imageNamed:bundleImageName inBundle:b compatibleWithTraitCollection:nil];
-        if (image != nil) {
-            break;
-        }
+    // 1. Direct lookup in getAppBundle() (where Assets.car resides)
+    if (appBundle != nil) {
+        image = [UIImage imageNamed:bundleImageName inBundle:appBundle compatibleWithTraitCollection:nil];
     }
+    
+    // 2. Lookup in [NSBundle mainBundle] if distinct
+    if (image == nil && mainBundle != nil && mainBundle != appBundle) {
+        image = [UIImage imageNamed:bundleImageName inBundle:mainBundle compatibleWithTraitCollection:nil];
+    }
+    
+    // 3. Fallback to imageNamed: directly
     if (image == nil) {
         image = [UIImage imageNamed:bundleImageName];
     }
     
-    // 2. Check lastPathComponent if bundleImageName contains '/'
+    // 4. Try lastPathComponent if bundleImageName contains directories (e.g. "Contact List/AddMemberIcon")
     NSString *lastComponent = [bundleImageName lastPathComponent];
-    BOOL hasSubdir = lastComponent != nil && ![lastComponent isEqualToString:bundleImageName];
-    if (image == nil && hasSubdir) {
-        for (NSBundle *b in candidates) {
-            image = [UIImage imageNamed:lastComponent inBundle:b compatibleWithTraitCollection:nil];
-            if (image != nil) {
-                break;
-            }
+    if (image == nil && lastComponent.length > 0 && ![lastComponent isEqualToString:bundleImageName]) {
+        if (appBundle != nil) {
+            image = [UIImage imageNamed:lastComponent inBundle:appBundle compatibleWithTraitCollection:nil];
+        }
+        if (image == nil && mainBundle != nil && mainBundle != appBundle) {
+            image = [UIImage imageNamed:lastComponent inBundle:mainBundle compatibleWithTraitCollection:nil];
         }
         if (image == nil) {
             image = [UIImage imageNamed:lastComponent];
         }
     }
     
-    // 3. Check loose files in candidate bundles (.png, .pdf)
+    // 5. Try ChatController / TelegramUI framework bundle if dynamically linked
     if (image == nil) {
-        for (NSBundle *b in candidates) {
-            NSString *filePath = [b pathForResource:bundleImageName ofType:@"png"];
-            if (filePath == nil) {
-                filePath = [b pathForResource:bundleImageName ofType:@"pdf"];
+        static NSBundle *telegramUIBundle = nil;
+        static dispatch_once_t tOnce;
+        dispatch_once(&tOnce, ^{
+            Class cls = NSClassFromString(@"ChatController") ?: NSClassFromString(@"TelegramUI_ChatController");
+            if (cls != nil) {
+                telegramUIBundle = [NSBundle bundleForClass:cls];
             }
-            if (filePath == nil && hasSubdir) {
-                filePath = [b pathForResource:lastComponent ofType:@"png"];
-                if (filePath == nil) {
-                    filePath = [b pathForResource:lastComponent ofType:@"pdf"];
-                }
-            }
-            if (filePath != nil) {
-                image = [UIImage imageWithContentsOfFile:filePath];
-                if (image != nil) {
-                    break;
-                }
+        });
+        if (telegramUIBundle != nil && telegramUIBundle != appBundle && telegramUIBundle != mainBundle) {
+            image = [UIImage imageNamed:bundleImageName inBundle:telegramUIBundle compatibleWithTraitCollection:nil];
+            if (image == nil && lastComponent.length > 0 && ![lastComponent isEqualToString:bundleImageName]) {
+                image = [UIImage imageNamed:lastComponent inBundle:telegramUIBundle compatibleWithTraitCollection:nil];
             }
         }
     }
     
-    // 4. Fallback to all loaded frameworks if not found in candidate list
-    if (image == nil) {
-        for (NSBundle *b in [NSBundle allFrameworks]) {
-            image = [UIImage imageNamed:bundleImageName inBundle:b compatibleWithTraitCollection:nil];
-            if (image != nil) {
-                break;
-            }
-            if (hasSubdir) {
-                image = [UIImage imageNamed:lastComponent inBundle:b compatibleWithTraitCollection:nil];
-                if (image != nil) {
-                    break;
-                }
-            }
-        }
-    }
-    
-    // 5. Fallback to SF Symbol for known Telegram/Ghostgram icons
+    // 6. Fast SF Symbol fallback for standard Telegram icons
     if (image == nil) {
         image = ggFallbackSystemImage(bundleImageName);
     }

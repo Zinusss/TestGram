@@ -314,7 +314,7 @@ public func generateSmallHorizontalStretchableFilledCircleImage(diameter: CGFloa
 
 public func generateTintedImage(image: UIImage?, color: UIColor, backgroundColor: UIColor? = nil, flipHorizontally: Bool = false) -> UIImage? {
     guard let image = image else {
-        return nil
+        return UIImage()
     }
     
     let imageSize = image.size

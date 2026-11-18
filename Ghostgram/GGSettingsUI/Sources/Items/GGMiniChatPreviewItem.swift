@@ -185,7 +185,11 @@ func ggPreviewMessageItems(context: AccountContext, presentationData: Presentati
         if let quote = message.quote, !quote.isEmpty {
             let quoteLength = (quote as NSString).length
             messageText = message.text.isEmpty ? quote : quote + "\n" + message.text
-            attributes.append(TextEntitiesMessageAttribute(entities: [MessageTextEntity(range: 0 ..< quoteLength, type: .BlockQuote(isCollapsed: false))]))
+            let totalLength = (messageText as NSString).length
+            let safeLength = min(quoteLength, totalLength)
+            if safeLength > 0 {
+                attributes.append(TextEntitiesMessageAttribute(entities: [MessageTextEntity(range: 0 ..< safeLength, type: .BlockQuote(isCollapsed: false))]))
+            }
         }
 
         var flags: EngineMessage.Flags = message.isOutgoing ? [] : [.Incoming]
@@ -615,7 +619,11 @@ private final class GGMiniChatPreviewItemNode: ListViewItemNode {
                 let timeSize = (timeText as NSString).size(withAttributes: timeAttributes)
                 let statusWidth: CGFloat = message.isOutgoing ? 18.0 : 0.0
                 let bubbleFrame = bubbleNode.contentFrame()
-                markNode.frame = CGRect(origin: CGPoint(x: floorToScreenPixels(bubbleFrame.maxX - 11.0 - statusWidth - timeSize.width - 3.0 - markSize.width), y: floorToScreenPixels(bubbleFrame.maxY - 6.0 - timeSize.height + (timeSize.height - markSize.height) / 2.0)), size: markSize)
+                if bubbleFrame.width > 0.0 && bubbleFrame.height > 0.0 {
+                    markNode.frame = CGRect(origin: CGPoint(x: floorToScreenPixels(bubbleFrame.maxX - 11.0 - statusWidth - timeSize.width - 3.0 - markSize.width), y: floorToScreenPixels(bubbleFrame.maxY - 6.0 - timeSize.height + (timeSize.height - markSize.height) / 2.0)), size: markSize)
+                } else {
+                    markNode.frame = CGRect(origin: CGPoint(), size: markSize)
+                }
             }
             if markNode.supernode !== node {
                 markNode.removeFromSupernode()

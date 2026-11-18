@@ -153,7 +153,7 @@ jobs:
           path: build-output/ipa/*.ipa
           if-no-files-found: error
 
-      - name: Publish to GitHub Releases
+      - name: Publish to GitHub Releases (latest)
         uses: softprops/action-gh-release@v2
         if: success()
         with:
@@ -161,9 +161,28 @@ jobs:
           name: Ghostgram iOS (Latest Working Build)
           body: |
             Оновлений стабільний білд Ghostgram iOS:
-            - Усунено всі лаги та зависання інтерфейсу (високопродуктивний кеш іконок).
-            - Повністю усунено всі вильоти при відкритті будь-якого чату чи каналу.
-            - Працюють всі іконки меню та внутрішні налаштування Ghostgram.
+            - Повністю усунено всі лаги та зависання інтерфейсу (миттєвий кеш іконок без перебору бандлів).
+            - Повністю усунено вильоти при відкритті будь-якого чату, каналу чи контактів.
+            - Виправлено виліт при увімкненні "Зберігати видалені повідомлення".
+            - Повністю відновлено роботу всіх іконок.
+          files: |
+            build-output/ipa/Ghostgram.ipa
+            build-output/ipa/Telegram.ipa
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish to GitHub Releases (v13.1.1-fix)
+        uses: softprops/action-gh-release@v2
+        if: success()
+        with:
+          tag_name: v13.1.1-fix
+          name: Ghostgram iOS v13.1.1 (Chat & Settings Crash Fixes)
+          body: |
+            Оновлений стабільний білд Ghostgram iOS:
+            - Повністю усунено всі лаги та зависання інтерфейсу (миттєвий кеш іконок без перебору бандлів).
+            - Повністю усунено вильоти при відкритті будь-якого чату, каналу чи контактів.
+            - Виправлено виліт при увімкненні "Зберігати видалені повідомлення".
+            - Повністю відновлено роботу всіх іконок.
           files: |
             build-output/ipa/Ghostgram.ipa
             build-output/ipa/Telegram.ipa
