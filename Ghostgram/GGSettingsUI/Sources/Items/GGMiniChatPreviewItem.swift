@@ -295,216 +295,263 @@ private final class GGMiniChatPreviewItemNode: ListViewItemNode {
         self.addSubnode(self.headerStatusNode)
     }
 
+    private struct HeaderLayoutResult {
+        let header: GGMiniChatHeader?
+        let peer: EnginePeer?
+        let titleLayout: (TextNodeLayout, () -> TextNode)?
+        let statusLayout: (TextNodeLayout, () -> TextNode)?
+        let statusIcon: (content: EmojiStatusComponent.Content, particleColor: UIColor?)?
+    }
+
+    private static func prepareNodes(items: [ListViewItem], currentNodes: [ListViewItemNode], params: ListViewItemLayoutParams) -> [ListViewItemNode] {
+        var nodes: [ListViewItemNode] = []
+        if currentNodes.count == items.count && !currentNodes.isEmpty {
+            nodes = currentNodes
+            for i in 0 ..< items.count {
+                let itemNode = currentNodes[i]
+                items[i].updateNode(async: { $0() }, node: {
+                    return itemNode
+                }, params: params, neighbors: ListViewItemNeighbors(previous: i == 0 ? nil : items[i - 1].neighborDescriptor, next: i == (items.count - 1) ? nil : items[i + 1].neighborDescriptor), animation: .None, completion: { layout, apply in
+                    itemNode.contentSize = layout.contentSize
+                    itemNode.insets = layout.insets
+                    itemNode.frame = CGRect(origin: itemNode.frame.origin, size: CGSize(width: layout.size.width, height: layout.size.height))
+                    itemNode.isUserInteractionEnabled = false
+                    apply(ListViewItemApply())
+                })
+            }
+        } else {
+            for i in 0 ..< items.count {
+                var createdNode: ListViewItemNode?
+                items[i].nodeConfiguredForParams(async: { $0() }, params: params, synchronousLoads: false, neighbors: ListViewItemNeighbors(previous: i == 0 ? nil : items[i - 1].neighborDescriptor, next: i == (items.count - 1) ? nil : items[i + 1].neighborDescriptor), completion: { node, apply in
+                    createdNode = node
+                    apply().1(ListViewItemApply())
+                })
+                if let createdNode {
+                    createdNode.isUserInteractionEnabled = false
+                    nodes.append(createdNode)
+                }
+            }
+        }
+        return nodes
+    }
+
+    private static func calculateHeader(
+        header: GGMiniChatHeader?,
+        accountPeer: EnginePeer?,
+        presentationData: PresentationData,
+        params: ListViewItemLayoutParams,
+        makeTitleLayout: (TextNodeLayoutArguments) -> (TextNodeLayout, () -> TextNode),
+        makeStatusLayout: (TextNodeLayoutArguments) -> (TextNodeLayout, () -> TextNode),
+        context: AccountContext
+    ) -> HeaderLayoutResult {
+        var headerTitleLayout: (TextNodeLayout, () -> TextNode)?
+        var headerStatusLayout: (TextNodeLayout, () -> TextNode)?
+        var headerPeer: EnginePeer?
+        var headerStatusIcon: (content: EmojiStatusComponent.Content, particleColor: UIColor?)?
+
+        if let header, !header.hidesTitle {
+            let title: String
+            switch header.peer {
+            case .account:
+                headerPeer = accountPeer
+                title = accountPeer?.compactDisplayTitle ?? ""
+            case let .demo(name):
+                headerPeer = .user(ggDemoUser(id: 1, name: name))
+                title = name
+            }
+            let theme = presentationData.theme
+            if case .account = header.peer, let peer = accountPeer, !ggMiniChatHidesEmojiStatus() {
+                if let emojiStatus = peer.emojiStatus {
+                    headerStatusIcon = (.animation(content: .customEmoji(fileId: emojiStatus.fileId), size: CGSize(width: 32.0, height: 32.0), placeholderColor: theme.list.mediaPlaceholderColor, themeColor: theme.list.itemAccentColor, loopMode: .count(2)), emojiStatus.color.flatMap { UIColor(rgb: UInt32(bitPattern: $0)) })
+                } else if peer.isPremium && !PremiumConfiguration.with(appConfiguration: context.currentAppConfiguration.with { $0 }).isPremiumDisabled {
+                    headerStatusIcon = (.premium(color: theme.list.itemAccentColor), nil)
+                }
+            }
+            let statusIconWidth: CGFloat = headerStatusIcon == nil ? 0.0 : ggMiniChatHeaderStatusIconSize + ggMiniChatHeaderStatusIconSpacing
+            let constrainedWidth = max(1.0, params.width - params.leftInset - params.rightInset - 2.0 * (ggMiniChatHeaderSideInset + ggMiniChatHeaderPillSize + 8.0) - 28.0)
+            headerTitleLayout = makeTitleLayout(TextNodeLayoutArguments(attributedString: NSAttributedString(string: title, font: Font.semibold(15.0), textColor: theme.rootController.navigationBar.primaryTextColor), backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: max(1.0, constrainedWidth - statusIconWidth), height: CGFloat.greatestFiniteMagnitude), alignment: .center, cutout: nil, insets: UIEdgeInsets()))
+            headerStatusLayout = makeStatusLayout(TextNodeLayoutArguments(attributedString: NSAttributedString(string: header.status, font: Font.regular(12.0), textColor: header.statusIsAccent ? theme.rootController.navigationBar.accentTextColor : theme.rootController.navigationBar.secondaryTextColor), backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: constrainedWidth, height: CGFloat.greatestFiniteMagnitude), alignment: .center, cutout: nil, insets: UIEdgeInsets()))
+        } else if let header {
+            switch header.peer {
+            case .account:
+                headerPeer = accountPeer
+            case let .demo(name):
+                headerPeer = .user(ggDemoUser(id: 1, name: name))
+            }
+        }
+
+        return HeaderLayoutResult(
+            header: header,
+            peer: headerPeer,
+            titleLayout: headerTitleLayout,
+            statusLayout: headerStatusLayout,
+            statusIcon: headerStatusIcon
+        )
+    }
+
+    private func applyLayout(
+        item: GGMiniChatPreviewItem,
+        params: ListViewItemLayoutParams,
+        neighbors: ItemListNeighbors,
+        contentSize: CGSize,
+        insets: UIEdgeInsets,
+        nodes: [ListViewItemNode],
+        orderedMessages: [GGPreviewMessage],
+        backgroundNode: WallpaperBackgroundNode?,
+        headerResult: HeaderLayoutResult
+    ) {
+        self.item = item
+
+        if self.messageNodes.count != nodes.count || zip(self.messageNodes, nodes).contains(where: { $0 !== $1 }) {
+            for node in self.messageNodes where !nodes.contains(where: { $0 === node }) {
+                node.removeFromSupernode()
+            }
+        }
+        self.messageNodes = nodes
+
+        self.containerNode.frame = CGRect(origin: CGPoint(), size: contentSize)
+        var topOffset: CGFloat = ggMiniChatVerticalPadding
+        for node in nodes {
+            if node.supernode == nil {
+                self.containerNode.addSubnode(node)
+            }
+            node.updateFrame(CGRect(origin: CGPoint(x: 0.0, y: topOffset), size: node.frame.size), within: contentSize)
+            topOffset += node.frame.size.height
+        }
+
+        self.applyMessageDecorations(item: item, orderedMessages: orderedMessages, nodes: nodes)
+
+        if let backgroundNode, self.backgroundNode !== backgroundNode {
+            self.backgroundNode?.removeFromSupernode()
+            self.backgroundNode = backgroundNode
+            self.wallpaperClipNode.addSubnode(backgroundNode)
+        }
+
+        let presentationData = item.presentationData
+        self.chrome.apply(to: self, theme: presentationData.theme, params: params, neighbors: neighbors, contentSize: contentSize, insets: insets, drawsBackground: false)
+
+        let backgroundFrame = self.chrome.backgroundFrame
+        let blockFrame = CGRect(x: params.leftInset, y: 0.0, width: max(0.0, params.width - params.leftInset - params.rightInset), height: contentSize.height)
+        self.wallpaperClipNode.frame = blockFrame
+        if let backgroundNode = self.backgroundNode {
+            let wallpaperFrame = CGRect(x: -params.leftInset, y: backgroundFrame.minY - 100.0, width: params.width, height: backgroundFrame.height + 200.0)
+            backgroundNode.frame = wallpaperFrame
+            backgroundNode.updateLayout(size: wallpaperFrame.size, displayMode: .aspectFill, transition: .immediate)
+        }
+
+        if let header = headerResult.header {
+            let theme = presentationData.theme
+            let pillSize = ggMiniChatHeaderPillSize
+            let pillY = floor((ggMiniChatHeaderHeight - pillSize) / 2.0)
+
+            let backFrame = CGRect(x: blockFrame.minX + ggMiniChatHeaderSideInset, y: pillY, width: pillSize, height: pillSize)
+            self.headerBackPillNode.isHidden = false
+            self.headerBackPillNode.frame = backFrame
+            (self.headerBackPillNode.view as? GlassBackgroundView)?.update(size: backFrame.size, cornerRadius: pillSize * 0.5, isDark: theme.overallDarkAppearance, tintColor: .init(kind: .panel), isInteractive: false, transition: .immediate)
+            if self.headerBackIconTheme !== theme {
+                self.headerBackIconTheme = theme
+                self.headerBackIconNode.image = ggMiniChatBackArrowImage(side: pillSize, color: theme.chat.inputPanel.panelControlColor)
+            }
+            self.headerBackIconNode.isHidden = false
+            self.headerBackIconNode.frame = backFrame
+
+            if header.hidesAvatar {
+                self.headerAvatarNode.isHidden = true
+                self.headerAvatarPillNode.isHidden = true
+            } else {
+                let glassFrame = CGRect(origin: CGPoint(x: blockFrame.maxX - ggMiniChatHeaderSideInset - pillSize, y: pillY), size: CGSize(width: pillSize, height: pillSize))
+                let avatarFrame = glassFrame.insetBy(dx: ggMiniChatHeaderAvatarInset, dy: ggMiniChatHeaderAvatarInset)
+                let avatarCornerRadius = ggAvatarCornerRadius(side: avatarFrame.width, isForum: false, upstream: avatarFrame.width * 0.5)
+                self.headerAvatarPillNode.isHidden = false
+                self.headerAvatarPillNode.frame = glassFrame
+                (self.headerAvatarPillNode.view as? GlassBackgroundView)?.update(size: glassFrame.size, cornerRadius: min(pillSize * 0.5, avatarCornerRadius + ggMiniChatHeaderAvatarInset), isDark: theme.overallDarkAppearance, tintColor: .init(kind: .panel), isInteractive: false, transition: .immediate)
+                self.headerAvatarNode.isHidden = false
+                self.headerAvatarNode.frame = avatarFrame
+                self.headerAvatarNode.updateSize(size: avatarFrame.size)
+                self.headerAvatarNode.setPeer(context: item.context, theme: theme, peer: headerResult.peer, displayDimensions: avatarFrame.size)
+            }
+
+            if let (titleLayout, titleApply) = headerResult.titleLayout, let (statusLayout, statusApply) = headerResult.statusLayout {
+                let _ = titleApply()
+                let _ = statusApply()
+                self.headerTitleNode.isHidden = false
+                self.headerStatusNode.isHidden = false
+                self.headerTitlePillNode.isHidden = false
+                let statusIconWidth: CGFloat = headerResult.statusIcon == nil ? 0.0 : ggMiniChatHeaderStatusIconSize + ggMiniChatHeaderStatusIconSpacing
+                let titleRowWidth = titleLayout.size.width + statusIconWidth
+                let textWidth = max(titleRowWidth, statusLayout.size.width)
+                let pillWidth = textWidth + 28.0
+                let pillFrame = CGRect(x: floorToScreenPixels(blockFrame.midX - pillWidth / 2.0), y: pillY, width: pillWidth, height: pillSize)
+                self.headerTitlePillNode.frame = pillFrame
+                (self.headerTitlePillNode.view as? GlassBackgroundView)?.update(size: pillFrame.size, cornerRadius: pillSize * 0.5, isDark: theme.overallDarkAppearance, tintColor: .init(kind: .panel), isInteractive: false, transition: .immediate)
+                let textHeight = titleLayout.size.height + statusLayout.size.height
+                let textY = floor(pillFrame.midY - textHeight / 2.0)
+                let titleFrame = CGRect(origin: CGPoint(x: floorToScreenPixels(pillFrame.midX - titleRowWidth / 2.0), y: textY), size: titleLayout.size)
+                self.headerTitleNode.frame = titleFrame
+                self.headerStatusNode.frame = CGRect(origin: CGPoint(x: floorToScreenPixels(pillFrame.midX - statusLayout.size.width / 2.0), y: textY + titleLayout.size.height), size: statusLayout.size)
+                self.updateHeaderStatusIcon(item: item, icon: headerResult.statusIcon, titleFrame: titleFrame)
+            } else {
+                self.headerTitlePillNode.isHidden = true
+                self.headerTitleNode.isHidden = true
+                self.headerStatusNode.isHidden = true
+                self.updateHeaderStatusIcon(item: item, icon: nil, titleFrame: CGRect())
+            }
+        } else {
+            self.headerBackPillNode.isHidden = true
+            self.headerBackIconNode.isHidden = true
+            self.headerTitlePillNode.isHidden = true
+            self.headerAvatarPillNode.isHidden = true
+            self.headerAvatarNode.isHidden = true
+            self.headerTitleNode.isHidden = true
+            self.headerStatusNode.isHidden = true
+            self.updateHeaderStatusIcon(item: item, icon: nil, titleFrame: CGRect())
+        }
+
+        self.applyOverlays(item: item, params: params, contentSize: contentSize, hasHeader: headerResult.header != nil)
+    }
+
     func asyncLayout() -> (_ item: GGMiniChatPreviewItem, _ params: ListViewItemLayoutParams, _ neighbors: ItemListNeighbors) -> (ListViewItemNodeLayout, () -> Void) {
         let currentNodes = self.messageNodes
-        var currentBackgroundNode = self.backgroundNode
+        let initialBackgroundNode = self.backgroundNode
         let makeTitleLayout = TextNode.asyncLayout(self.headerTitleNode)
         let makeStatusLayout = TextNode.asyncLayout(self.headerStatusNode)
 
         return { [weak self] item, params, neighbors in
             let presentationData = item.presentationData
-            if currentBackgroundNode == nil {
-                currentBackgroundNode = createWallpaperBackgroundNode(context: item.context, forChatDisplay: false)
-            }
-            currentBackgroundNode?.update(wallpaper: presentationData.chatWallpaper, animated: false)
-            currentBackgroundNode?.updateBubbleTheme(bubbleTheme: presentationData.theme, bubbleCorners: presentationData.chatBubbleCorners)
+            let backgroundNode = initialBackgroundNode ?? createWallpaperBackgroundNode(context: item.context, forChatDisplay: false)
+            backgroundNode.update(wallpaper: presentationData.chatWallpaper, animated: false)
+            backgroundNode.updateBubbleTheme(bubbleTheme: presentationData.theme, bubbleCorners: presentationData.chatBubbleCorners)
 
-            // The list is drawn bottom-up (the container is rotated), so messages go in reversed.
             let orderedMessages = Array(item.content.messages.reversed())
-            let items = ggPreviewMessageItems(context: item.context, presentationData: presentationData, messages: orderedMessages, backgroundNode: currentBackgroundNode)
+            let items = ggPreviewMessageItems(context: item.context, presentationData: presentationData, messages: orderedMessages, backgroundNode: backgroundNode)
 
-            // Reuse the nodes while the number of messages is the same; a modifier that adds or
-            // removes a message gets a fresh set (updateNode cannot change the node count).
-            var nodes: [ListViewItemNode] = []
-            if currentNodes.count == items.count && !currentNodes.isEmpty {
-                nodes = currentNodes
-                for i in 0 ..< items.count {
-                    let itemNode = currentNodes[i]
-                    items[i].updateNode(async: { $0() }, node: {
-                        return itemNode
-                    }, params: params, neighbors: ListViewItemNeighbors(previous: i == 0 ? nil : items[i - 1].neighborDescriptor, next: i == (items.count - 1) ? nil : items[i + 1].neighborDescriptor), animation: .None, completion: { layout, apply in
-                        itemNode.contentSize = layout.contentSize
-                        itemNode.insets = layout.insets
-                        itemNode.frame = CGRect(origin: itemNode.frame.origin, size: CGSize(width: layout.size.width, height: layout.size.height))
-                        itemNode.isUserInteractionEnabled = false
-                        apply(ListViewItemApply())
-                    })
-                }
-            } else {
-                for i in 0 ..< items.count {
-                    var itemNode: ListViewItemNode?
-                    items[i].nodeConfiguredForParams(async: { $0() }, params: params, synchronousLoads: false, neighbors: ListViewItemNeighbors(previous: i == 0 ? nil : items[i - 1].neighborDescriptor, next: i == (items.count - 1) ? nil : items[i + 1].neighborDescriptor), completion: { node, apply in
-                        itemNode = node
-                        apply().1(ListViewItemApply())
-                    })
-                    if let itemNode {
-                        itemNode.isUserInteractionEnabled = false
-                        nodes.append(itemNode)
-                    }
-                }
-            }
-
-            var headerTitleLayout: (TextNodeLayout, () -> TextNode)?
-            var headerStatusLayout: (TextNodeLayout, () -> TextNode)?
-            var headerPeer: EnginePeer?
-            var headerStatusIcon: (content: EmojiStatusComponent.Content, particleColor: UIColor?)?
-            let header = item.content.header
-            if let header, !header.hidesTitle {
-                let title: String
-                switch header.peer {
-                case .account:
-                    headerPeer = item.accountPeer
-                    title = item.accountPeer?.compactDisplayTitle ?? ""
-                case let .demo(name):
-                    headerPeer = .user(ggDemoUser(id: 1, name: name))
-                    title = name
-                }
-                let theme = presentationData.theme
-                // The account's own emoji status (or the Premium star) after the name, as the chat's
-                // title shows it — unless «Скрыть эмодзи-статусы» is on.
-                if case .account = header.peer, let peer = item.accountPeer, !ggMiniChatHidesEmojiStatus() {
-                    if let emojiStatus = peer.emojiStatus {
-                        headerStatusIcon = (.animation(content: .customEmoji(fileId: emojiStatus.fileId), size: CGSize(width: 32.0, height: 32.0), placeholderColor: theme.list.mediaPlaceholderColor, themeColor: theme.list.itemAccentColor, loopMode: .count(2)), emojiStatus.color.flatMap { UIColor(rgb: UInt32(bitPattern: $0)) })
-                    } else if peer.isPremium && !PremiumConfiguration.with(appConfiguration: item.context.currentAppConfiguration.with { $0 }).isPremiumDisabled {
-                        headerStatusIcon = (.premium(color: theme.list.itemAccentColor), nil)
-                    }
-                }
-                let statusIconWidth: CGFloat = headerStatusIcon == nil ? 0.0 : ggMiniChatHeaderStatusIconSize + ggMiniChatHeaderStatusIconSpacing
-                // Between the back pill and the avatar, minus the title pill's own padding.
-                let constrainedWidth = max(1.0, params.width - params.leftInset - params.rightInset - 2.0 * (ggMiniChatHeaderSideInset + ggMiniChatHeaderPillSize + 8.0) - 28.0)
-                headerTitleLayout = makeTitleLayout(TextNodeLayoutArguments(attributedString: NSAttributedString(string: title, font: Font.semibold(15.0), textColor: theme.rootController.navigationBar.primaryTextColor), backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: max(1.0, constrainedWidth - statusIconWidth), height: CGFloat.greatestFiniteMagnitude), alignment: .center, cutout: nil, insets: UIEdgeInsets()))
-                headerStatusLayout = makeStatusLayout(TextNodeLayoutArguments(attributedString: NSAttributedString(string: header.status, font: Font.regular(12.0), textColor: header.statusIsAccent ? theme.rootController.navigationBar.accentTextColor : theme.rootController.navigationBar.secondaryTextColor), backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: constrainedWidth, height: CGFloat.greatestFiniteMagnitude), alignment: .center, cutout: nil, insets: UIEdgeInsets()))
-            } else if let header {
-                switch header.peer {
-                case .account:
-                    headerPeer = item.accountPeer
-                case let .demo(name):
-                    headerPeer = .user(ggDemoUser(id: 1, name: name))
-                }
-            }
+            let nodes = GGMiniChatPreviewItemNode.prepareNodes(items: items, currentNodes: currentNodes, params: params)
+            let headerResult = GGMiniChatPreviewItemNode.calculateHeader(
+                header: item.content.header,
+                accountPeer: item.accountPeer,
+                presentationData: presentationData,
+                params: params,
+                makeTitleLayout: makeTitleLayout,
+                makeStatusLayout: makeStatusLayout,
+                context: item.context
+            )
 
             let contentSize = CGSize(width: params.width, height: item.height)
             let insets = itemListNeighborsGroupedInsets(neighbors, params)
             let layout = ListViewItemNodeLayout(contentSize: contentSize, insets: insets)
 
             return (layout, {
-                guard let strongSelf = self else {
-                    return
-                }
-                strongSelf.item = item
-
-                if strongSelf.messageNodes.count != nodes.count || zip(strongSelf.messageNodes, nodes).contains(where: { $0 !== $1 }) {
-                    for node in strongSelf.messageNodes where !nodes.contains(where: { $0 === node }) {
-                        node.removeFromSupernode()
-                    }
-                }
-                strongSelf.messageNodes = nodes
-
-                strongSelf.containerNode.frame = CGRect(origin: CGPoint(), size: contentSize)
-                // The container is rotated by π: laying out from its top rests the bubbles on the bottom edge.
-                var topOffset: CGFloat = ggMiniChatVerticalPadding
-                for node in nodes {
-                    if node.supernode == nil {
-                        strongSelf.containerNode.addSubnode(node)
-                    }
-                    node.updateFrame(CGRect(origin: CGPoint(x: 0.0, y: topOffset), size: node.frame.size), within: contentSize)
-                    topOffset += node.frame.size.height
-                }
-
-                strongSelf.applyMessageDecorations(item: item, orderedMessages: orderedMessages, nodes: nodes)
-
-                if let currentBackgroundNode, strongSelf.backgroundNode !== currentBackgroundNode {
-                    strongSelf.backgroundNode?.removeFromSupernode()
-                    strongSelf.backgroundNode = currentBackgroundNode
-                    strongSelf.wallpaperClipNode.addSubnode(currentBackgroundNode)
-                }
-
-                strongSelf.chrome.apply(to: strongSelf, theme: presentationData.theme, params: params, neighbors: neighbors, contentSize: contentSize, insets: insets, drawsBackground: false)
-
-                // The block itself: the wallpaper never leaves it (no strip above the rounded top).
-                let backgroundFrame = strongSelf.chrome.backgroundFrame
-                let blockFrame = CGRect(x: params.leftInset, y: 0.0, width: max(0.0, params.width - params.leftInset - params.rightInset), height: contentSize.height)
-                strongSelf.wallpaperClipNode.frame = blockFrame
-                if let backgroundNode = strongSelf.backgroundNode {
-                    // Laid out over the whole list width, as in the chat, then clipped to the block.
-                    let wallpaperFrame = CGRect(x: -params.leftInset, y: backgroundFrame.minY - 100.0, width: params.width, height: backgroundFrame.height + 200.0)
-                    backgroundNode.frame = wallpaperFrame
-                    backgroundNode.updateLayout(size: wallpaperFrame.size, displayMode: .aspectFill, transition: .immediate)
-                }
-
-                if let header {
-                    let theme = presentationData.theme
-                    let pillSize = ggMiniChatHeaderPillSize
-                    let pillY = floor((ggMiniChatHeaderHeight - pillSize) / 2.0)
-
-                    let backFrame = CGRect(x: blockFrame.minX + ggMiniChatHeaderSideInset, y: pillY, width: pillSize, height: pillSize)
-                    strongSelf.headerBackPillNode.isHidden = false
-                    strongSelf.headerBackPillNode.frame = backFrame
-                    (strongSelf.headerBackPillNode.view as? GlassBackgroundView)?.update(size: backFrame.size, cornerRadius: pillSize * 0.5, isDark: theme.overallDarkAppearance, tintColor: .init(kind: .panel), isInteractive: false, transition: .immediate)
-                    if strongSelf.headerBackIconTheme !== theme {
-                        strongSelf.headerBackIconTheme = theme
-                        // As the chat draws it (glass navigation bar: `chat.inputPanel.panelControlColor`).
-                        // A tinted SF Symbol lost its tint in the layer-backed image node and came out black.
-                        strongSelf.headerBackIconNode.image = ggMiniChatBackArrowImage(side: pillSize, color: theme.chat.inputPanel.panelControlColor)
-                    }
-                    strongSelf.headerBackIconNode.isHidden = false
-                    strongSelf.headerBackIconNode.frame = backFrame
-
-                    if header.hidesAvatar {
-                        strongSelf.headerAvatarNode.isHidden = true
-                        strongSelf.headerAvatarPillNode.isHidden = true
-                    } else {
-                        // As the chat draws it: the avatar inside its own glass, a thin ring around
-                        // it (concentric with square avatars).
-                        let glassFrame = CGRect(origin: CGPoint(x: blockFrame.maxX - ggMiniChatHeaderSideInset - pillSize, y: pillY), size: CGSize(width: pillSize, height: pillSize))
-                        let avatarFrame = glassFrame.insetBy(dx: ggMiniChatHeaderAvatarInset, dy: ggMiniChatHeaderAvatarInset)
-                        let avatarCornerRadius = ggAvatarCornerRadius(side: avatarFrame.width, isForum: false, upstream: avatarFrame.width * 0.5)
-                        strongSelf.headerAvatarPillNode.isHidden = false
-                        strongSelf.headerAvatarPillNode.frame = glassFrame
-                        (strongSelf.headerAvatarPillNode.view as? GlassBackgroundView)?.update(size: glassFrame.size, cornerRadius: min(pillSize * 0.5, avatarCornerRadius + ggMiniChatHeaderAvatarInset), isDark: theme.overallDarkAppearance, tintColor: .init(kind: .panel), isInteractive: false, transition: .immediate)
-                        strongSelf.headerAvatarNode.isHidden = false
-                        strongSelf.headerAvatarNode.frame = avatarFrame
-                        strongSelf.headerAvatarNode.updateSize(size: avatarFrame.size)
-                        strongSelf.headerAvatarNode.setPeer(context: item.context, theme: theme, peer: headerPeer, displayDimensions: avatarFrame.size)
-                    }
-
-                    if let (titleLayout, titleApply) = headerTitleLayout, let (statusLayout, statusApply) = headerStatusLayout {
-                        let _ = titleApply()
-                        let _ = statusApply()
-                        strongSelf.headerTitleNode.isHidden = false
-                        strongSelf.headerStatusNode.isHidden = false
-                        strongSelf.headerTitlePillNode.isHidden = false
-                        let statusIconWidth: CGFloat = headerStatusIcon == nil ? 0.0 : ggMiniChatHeaderStatusIconSize + ggMiniChatHeaderStatusIconSpacing
-                        let titleRowWidth = titleLayout.size.width + statusIconWidth
-                        let textWidth = max(titleRowWidth, statusLayout.size.width)
-                        let pillWidth = textWidth + 28.0
-                        let pillFrame = CGRect(x: floorToScreenPixels(blockFrame.midX - pillWidth / 2.0), y: pillY, width: pillWidth, height: pillSize)
-                        strongSelf.headerTitlePillNode.frame = pillFrame
-                        (strongSelf.headerTitlePillNode.view as? GlassBackgroundView)?.update(size: pillFrame.size, cornerRadius: pillSize * 0.5, isDark: theme.overallDarkAppearance, tintColor: .init(kind: .panel), isInteractive: false, transition: .immediate)
-                        let textHeight = titleLayout.size.height + statusLayout.size.height
-                        let textY = floor(pillFrame.midY - textHeight / 2.0)
-                        let titleFrame = CGRect(origin: CGPoint(x: floorToScreenPixels(pillFrame.midX - titleRowWidth / 2.0), y: textY), size: titleLayout.size)
-                        strongSelf.headerTitleNode.frame = titleFrame
-                        strongSelf.headerStatusNode.frame = CGRect(origin: CGPoint(x: floorToScreenPixels(pillFrame.midX - statusLayout.size.width / 2.0), y: textY + titleLayout.size.height), size: statusLayout.size)
-                        strongSelf.updateHeaderStatusIcon(item: item, icon: headerStatusIcon, titleFrame: titleFrame)
-                    } else {
-                        strongSelf.headerTitlePillNode.isHidden = true
-                        strongSelf.headerTitleNode.isHidden = true
-                        strongSelf.headerStatusNode.isHidden = true
-                        strongSelf.updateHeaderStatusIcon(item: item, icon: nil, titleFrame: CGRect())
-                    }
-                } else {
-                    strongSelf.headerBackPillNode.isHidden = true
-                    strongSelf.headerBackIconNode.isHidden = true
-                    strongSelf.headerTitlePillNode.isHidden = true
-                    strongSelf.headerAvatarPillNode.isHidden = true
-                    strongSelf.headerAvatarNode.isHidden = true
-                    strongSelf.headerTitleNode.isHidden = true
-                    strongSelf.headerStatusNode.isHidden = true
-                    strongSelf.updateHeaderStatusIcon(item: item, icon: nil, titleFrame: CGRect())
-                }
-
-                strongSelf.applyOverlays(item: item, params: params, contentSize: contentSize, hasHeader: header != nil)
+                self?.applyLayout(
+                    item: item,
+                    params: params,
+                    neighbors: neighbors,
+                    contentSize: contentSize,
+                    insets: insets,
+                    nodes: nodes,
+                    orderedMessages: orderedMessages,
+                    backgroundNode: backgroundNode,
+                    headerResult: headerResult
+                )
             })
         }
     }
