@@ -335,6 +335,44 @@ private final class GGMiniChatPreviewItemNode: ListViewItemNode {
         return nodes
     }
 
+    @_optimize(none)
+    @inline(never)
+    private static func resolveHeaderStatusIcon(
+        header: GGMiniChatHeader,
+        accountPeer: EnginePeer?,
+        theme: PresentationTheme,
+        context: AccountContext
+    ) -> (content: EmojiStatusComponent.Content, particleColor: UIColor?)? {
+        guard case .account = header.peer, let peer = accountPeer, !ggMiniChatHidesEmojiStatus() else {
+            return nil
+        }
+        if let emojiStatus = peer.emojiStatus {
+            let fileId: Int64
+            let colorValue: Int32?
+            switch emojiStatus.content {
+            case let .emoji(id):
+                fileId = id
+                colorValue = nil
+            case let .starGift(_, id, _, _, _, innerColor, _, _, _):
+                fileId = id
+                colorValue = innerColor
+            }
+            return (
+                .animation(
+                    content: .customEmoji(fileId: fileId),
+                    size: CGSize(width: 32.0, height: 32.0),
+                    placeholderColor: theme.list.mediaPlaceholderColor,
+                    themeColor: theme.list.itemAccentColor,
+                    loopMode: .count(2)
+                ),
+                colorValue.flatMap { UIColor(rgb: UInt32(bitPattern: $0)) }
+            )
+        } else if peer.isPremium && !PremiumConfiguration.with(appConfiguration: context.currentAppConfiguration.with { $0 }).isPremiumDisabled {
+            return (.premium(color: theme.list.itemAccentColor), nil)
+        }
+        return nil
+    }
+
     private static func calculateHeader(
         header: GGMiniChatHeader?,
         accountPeer: EnginePeer?,
@@ -360,13 +398,7 @@ private final class GGMiniChatPreviewItemNode: ListViewItemNode {
                 title = name
             }
             let theme = presentationData.theme
-            if case .account = header.peer, let peer = accountPeer, !ggMiniChatHidesEmojiStatus() {
-                if let emojiStatus = peer.emojiStatus {
-                    headerStatusIcon = (.animation(content: .customEmoji(fileId: emojiStatus.fileId), size: CGSize(width: 32.0, height: 32.0), placeholderColor: theme.list.mediaPlaceholderColor, themeColor: theme.list.itemAccentColor, loopMode: .count(2)), emojiStatus.color.flatMap { UIColor(rgb: UInt32(bitPattern: $0)) })
-                } else if peer.isPremium && !PremiumConfiguration.with(appConfiguration: context.currentAppConfiguration.with { $0 }).isPremiumDisabled {
-                    headerStatusIcon = (.premium(color: theme.list.itemAccentColor), nil)
-                }
-            }
+            headerStatusIcon = resolveHeaderStatusIcon(header: header, accountPeer: accountPeer, theme: theme, context: context)
             let statusIconWidth: CGFloat = headerStatusIcon == nil ? 0.0 : ggMiniChatHeaderStatusIconSize + ggMiniChatHeaderStatusIconSpacing
             let constrainedWidth = max(1.0, params.width - params.leftInset - params.rightInset - 2.0 * (ggMiniChatHeaderSideInset + ggMiniChatHeaderPillSize + 8.0) - 28.0)
             headerTitleLayout = makeTitleLayout(TextNodeLayoutArguments(attributedString: NSAttributedString(string: title, font: Font.semibold(15.0), textColor: theme.rootController.navigationBar.primaryTextColor), backgroundColor: nil, maximumNumberOfLines: 1, truncationType: .end, constrainedSize: CGSize(width: max(1.0, constrainedWidth - statusIconWidth), height: CGFloat.greatestFiniteMagnitude), alignment: .center, cutout: nil, insets: UIEdgeInsets()))
