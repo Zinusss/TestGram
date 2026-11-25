@@ -67,7 +67,17 @@ jobs:
 
       - name: Select Xcode
         run: |
-          REAL_DEV_DIR=$(python3 -c "import os; print(os.path.realpath('/Applications/Xcode.app/Contents/Developer'))")
+          ls -d /Applications/Xcode*.app || true
+          if [ -d "/Applications/Xcode_16.4.app/Contents/Developer" ]; then
+            REAL_DEV_DIR="/Applications/Xcode_16.4.app/Contents/Developer"
+          else
+            LATEST_16=$(ls -d /Applications/Xcode_16*.app 2>/dev/null | sort -V | tail -n 1)
+            if [ -n "$LATEST_16" ] && [ -d "$LATEST_16/Contents/Developer" ]; then
+              REAL_DEV_DIR="$LATEST_16/Contents/Developer"
+            else
+              REAL_DEV_DIR=$(python3 -c "import os; print(os.path.realpath('/Applications/Xcode.app/Contents/Developer'))")
+            fi
+          fi
           echo "Selecting Developer dir: $REAL_DEV_DIR"
           sudo xcode-select -s "$REAL_DEV_DIR"
           xcodebuild -version
